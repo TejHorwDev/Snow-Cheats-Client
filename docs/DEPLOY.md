@@ -142,9 +142,37 @@ redeploy; nothing is stored, it is read at boot.
 
 ## 3. Vercel — the website
 
-A project from the same repository, root directory `apps/site`, variables
-`SNOW_API` (the Render address) and `SITE_URL` (the Vercel address). No build
-settings to touch.
+**One thing is missing that only you can click.** Vercel has no GitHub login
+connection on this account yet, so it refuses to import the repository:
+
+> Failed to link TejHorwDev/Snow-Cheats-Client. You need to add a Login
+> Connection to your GitHub account first.
+
+Fix it once, in either place:
+
+- **Vercel → Account Settings → Authentication → Login Connections → GitHub →
+  Connect**, then approve; or
+- **GitHub → Settings → Applications → Vercel → Configure →** give it access to
+  `Snow-Cheats-Client`.
+
+Then: **Add New → Project → Import** `Snow-Cheats-Client`, and set
+
+| Field | Value |
+| --- | --- |
+| Root Directory | `apps/site` |
+| Framework | Next.js (detected) |
+| `SNOW_API` | `https://snow-loader-api.onrender.com` |
+| `SITE_URL` | `https://<project>.vercel.app` |
+
+No build command to change. Every push to `main` redeploys.
+
+⚠️ Vercel builds the **default branch**, which is `main` — and the new code is on
+the pull request `#1`, not on `main` yet. Merge the pull request and the site goes
+live with everything above; importing before that publishes the previous owner's
+site.
+
+The site reads the panel and revalidates every ten seconds: a product published in
+the panel appears on the site without a deploy.
 
 The site reads the panel and revalidates every ten seconds: a product published in
 the panel appears on the site without a deploy. If the site shows nothing, the
@@ -155,11 +183,9 @@ directly.
 
 ## 4. The Windows installer
 
-Already building: tag `loader-v1.0.0`, workflow
-`.github/workflows/loader-release.yml`.
-
-**Actions** tab → *Build SNOW LOADER release* → wait for the green tick (~10
-minutes) → **Releases** → `SNOW LOADER 1.0.0`:
+**Built and published** — tag `loader-v1.0.0`, workflow
+`.github/workflows/loader-release.yml`, green on the first run.
+<https://github.com/TejHorwDev/Snow-Cheats-Client/releases/tag/loader-v1.0.0>
 
 | Asset | What it is |
 | --- | --- |
@@ -167,9 +193,15 @@ minutes) → **Releases** → `SNOW LOADER 1.0.0`:
 | `SNOW-LOADER-Payload-1.0.0.asar` | what an installed copy updates with |
 | `payload.json` | version, file, size, SHA-256 for the updater |
 
-Copy the installer's download URL and paste it into the panel under
-**Settings → Download**. That makes every Download button on the site point at the
-file immediately, instead of waking the free API first.
+The installer link, if you want to paste it into **Settings → Download**:
+
+```
+https://github.com/TejHorwDev/Snow-Cheats-Client/releases/download/loader-v1.0.0/SNOW-LOADER-Setup-1.0.0.exe
+```
+
+Pasting it makes every Download button on the site go straight to the file. Left
+empty, the panel pipes the newest release itself — always current, but on the free
+tier the first byte can take half a minute if the instance is asleep.
 
 ### The address inside the .exe
 
