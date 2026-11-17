@@ -1,0 +1,2 @@
+# The inner installer is a build artifact copied in by CI, never committed.
+payload/
