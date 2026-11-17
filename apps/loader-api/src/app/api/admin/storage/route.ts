@@ -53,7 +53,7 @@ export async function GET(): Promise<Response> {
     saved: maskedStorage(),
     usage,
     /* The origin that has to appear in the bucket's CORS rule. */
-    origin: env.publicBaseUrl || 'https://indra-loader-api.onrender.com'
+    origin: env.publicBaseUrl || 'https://snow-loader-api.onrender.com'
   })
 }
 

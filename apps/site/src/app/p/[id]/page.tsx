@@ -35,16 +35,16 @@ export const dynamicParams = true
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const product = await getProduct((await params).id)
-  if (!product) return { title: 'Not found — INDRA' }
+  if (!product) return { title: 'Not found — SNOW' }
 
   return {
-    title: `${product.name} — INDRA`,
+    title: `${product.name} — SNOW`,
     description:
       product.description ||
-      `${product.name}, build ${product.version}, delivered and kept current by the INDRA loader.`,
+      `${product.name}, build ${product.version}, delivered and kept current by the SNOW loader.`,
     openGraph: {
       title: product.name,
-      description: product.description || `Build ${product.version}, via the INDRA loader.`,
+      description: product.description || `Build ${product.version}, via the SNOW loader.`,
       type: 'website'
     }
   }

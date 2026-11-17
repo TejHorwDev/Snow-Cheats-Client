@@ -1,6 +1,6 @@
--- INDRA LOADER — how a card draws its artwork
+-- SNOW LOADER — how a card draws its artwork
 --
--- Applied to the shared project (`indra-hub`, ref cztyznuoferktewdhyji) as the
+-- Applied to the project `Snow Cheats Loader` (ref pqomyuqirfygoccsmbid) as the
 -- migration `loader_card_frame`. Kept here so the schema exists in the repository
 -- rather than only in a dashboard.
 --

@@ -19,7 +19,7 @@ import WindowControls from '../components/WindowControls'
  * Instagram. The website is one button, and it is the only link.
  */
 
-const WEBSITE = 'https://indra-cheats.com'
+const WEBSITE = 'https://snow-cheats.com'
 
 /** The composition, in the window's own coordinates. */
 const TITLE_TOP = 186
@@ -67,7 +67,7 @@ export default function Landing({ onStart, onExternal }: Props): React.JSX.Eleme
           color: '#ffffff'
         }}
       >
-        INDRA CHEATS
+        SNOW CHEATS
       </h1>
 
       <div className="absolute flex items-start gap-[13px]" style={{ top: BUTTONS_TOP, left: 283 }}>

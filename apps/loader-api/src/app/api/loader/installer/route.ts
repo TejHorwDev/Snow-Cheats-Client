@@ -53,8 +53,8 @@ export async function GET(request: Request): Promise<Response> {
       return Response.json({ error: 'No release has been published yet.' }, { status: 404 })
     }
 
-    const name = `INDRA-LOADER-Setup-${release.version}.exe`
-    const url = `https://github.com/TejHorwDev/INDRA-HUB/releases/download/${release.tag}/${name}`
+    const name = `SNOW-LOADER-Setup-${release.version}.exe`
+    const url = `https://github.com/TejHorwDev/Snow-Cheats-Client/releases/download/${release.tag}/${name}`
 
     /*
      * `?probe=1` answers with the size instead of the bytes.

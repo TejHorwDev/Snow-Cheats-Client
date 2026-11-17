@@ -178,7 +178,7 @@ export default function AppDetail({
               <Rule />
               <span>{status}</span>
               <Rule />
-              <span>{app.keyauthAppId ? 'INDRA Auth' : 'Included'}</span>
+              <span>{app.keyauthAppId ? 'SNOW Auth' : 'Included'}</span>
             </div>
 
             {/* Nothing is better than a placeholder sentence pretending to be copy. */}

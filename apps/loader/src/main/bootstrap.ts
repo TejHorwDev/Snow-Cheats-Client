@@ -13,7 +13,7 @@ import { discardActive, resolveActivePayload } from './lib/payload'
  * `resources/app.asar`, and every relative path in it resolves the same way.
  *
  * Identity comes first, before any path is resolved: the userData folder is
- * where the payload lives, and it must be INDRA LOADER's folder and nobody
+ * where the payload lives, and it must be SNOW LOADER's folder and nobody
  * else's.
  *
  * `require` is built with `join()` rather than written literally so the bundler

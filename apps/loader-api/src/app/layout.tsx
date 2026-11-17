@@ -4,7 +4,7 @@ import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'INDRA LOADER — panel',
+  title: 'SNOW LOADER — panel',
   robots: { index: false, follow: false }
 }
 

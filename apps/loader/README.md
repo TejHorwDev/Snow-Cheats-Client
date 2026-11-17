@@ -1,9 +1,14 @@
-# INDRA LOADER
+# SNOW LOADER
 
-The desktop launcher: sign in against INDRA Auth, see the catalogue, download an
-app, launch it. A separate application from INDRA HUB — separate identity,
-separate installer, separate release train — that happens to live in the same
-repository.
+The desktop launcher: sign in against the deployment's `/v1` service, see the
+catalogue, download an app, launch it. Built from this repository by
+`.github/workflows/loader-release.yml`, which runs on `windows-latest` and
+publishes a GitHub Release for every `loader-v*` tag.
+
+The sign-in service is `apps/loader-api/src/app/v1/` — same deployment as the
+catalogue. `src/main/services/auth.ts` carries the product id and falls back to the
+address compiled in at build time (`SNOW_LOADER_API`), so a released installer
+knows where both live without an environment to read.
 
 ```
 src/main/bootstrap.ts   decides which copy of the code runs, then loads it
@@ -21,7 +26,7 @@ A release publishes two things: the one-time Windows installer, and a small
 
 ```
 installed app.asar (v1.0.0)
-   └── bootstrap.js ──► %APPDATA%\INDRA LOADER\update\state.json
+   └── bootstrap.js ──► %APPDATA%\SNOW LOADER\update\state.json
                           ├── verified payload → run payloads/main/index.js
                           └── nothing/broken  → run the installed copy
 ```
@@ -33,7 +38,7 @@ Four rules make it safe to ship:
 
 | Rule | Why |
 |---|---|
-| Tag prefix `loader-v` | The hub tags `v<version>` from the same repo; `releases/latest` would hand the loader the hub's payload |
+| Tag prefix `loader-v` | Another application may publish `v<version>` from the same repository; `releases/latest` would hand the loader the wrong payload |
 | Payload is never adopted unless hash **and** size match | A half-written download can never boot |
 | Never a downgrade | A re-published old release cannot roll a user back |
 | Two failed starts and the payload is dropped | Worst case is "the update did not take", never "the app will not open" |
@@ -47,7 +52,7 @@ npm run typecheck
 npm run build          # out/main (incl. bootstrap.js), out/preload, out/renderer
 npm run sim:update     # release selection + payload adoption, no network
 npm run sim:download   # atomic commit, resume, hash rejection, cancel
-npm run sim:isolation  # this app and INDRA HUB share no identity value
+npm run sim:isolation  # this app and SNOW HUB share no identity value
 npm run dist           # Windows installer (CI does this for real)
 ```
 

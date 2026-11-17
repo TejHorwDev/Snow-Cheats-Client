@@ -57,7 +57,7 @@ const B2_ENDPOINT = env('B2_ENDPOINT', `https://s3.${B2_REGION}.backblazeb2.com`
  * route that hashes what it hands out and knows who asked — so an exe address is rewritten
  * to this origin, not to the bucket's public host. Same rule the uploader already follows.
  */
-const API_BASE = env('API_BASE_URL', 'https://indra-loader-api.onrender.com').replace(/\/+$/, '')
+const API_BASE = env('API_BASE_URL', 'https://snow-loader-api.onrender.com').replace(/\/+$/, '')
 
 const missing = [
   ['SUPABASE_URL', SUPABASE_URL],

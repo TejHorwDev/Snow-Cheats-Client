@@ -40,7 +40,7 @@ import {
  * networks is the whole difference between a two-second check and a timeout.
  */
 
-const REPO = 'TejHorwDev/INDRA-HUB'
+const REPO = 'TejHorwDev/Snow-Cheats-Client'
 /** Both apps publish here; only this prefix is ours. See lib/releases.ts. */
 const TAG_PREFIX = 'loader-v'
 
@@ -330,7 +330,7 @@ async function diagnose(): Promise<{ text: string; verdict: string | null }> {
     return {
       text,
       verdict:
-        'Something is intercepting secure traffic to GitHub — a proxy or antivirus web shield. Allow INDRA LOADER through it and try again.'
+        'Something is intercepting secure traffic to GitHub — a proxy or antivirus web shield. Allow SNOW LOADER through it and try again.'
     }
   }
   return { text, verdict: null }

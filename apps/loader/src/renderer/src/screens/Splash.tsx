@@ -1,7 +1,7 @@
 /*
  * Splash.
  *
- * "INDRA CHEATS LOADER" at 24px, each glyph arriving 22ms after the one before it,
+ * "SNOW CHEATS LOADER" at 24px, each glyph arriving 22ms after the one before it,
  * then a hairline that sweeps out from the first letter.
  *
  * Two seconds, not four. Four was long enough to feel like something was loading,
@@ -9,7 +9,7 @@
  * arriving rather than a wait.
  */
 
-const TITLE = 'INDRA CHEATS LOADER'
+const TITLE = 'SNOW CHEATS LOADER'
 
 export default function Splash(): React.JSX.Element {
   return (

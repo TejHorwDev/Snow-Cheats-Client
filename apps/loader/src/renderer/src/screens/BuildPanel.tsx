@@ -74,7 +74,7 @@ export default function BuildPanel({ update, version, username }: Props): React.
 
       <div className="fade-up flex flex-1 flex-col gap-5 p-8">
         <div>
-          <h1 className="wordmark text-[24px] leading-none">INDRA CHEATS LOADER</h1>
+          <h1 className="wordmark text-[24px] leading-none">SNOW CHEATS LOADER</h1>
           <p className="mt-2 text-[12px] text-[var(--color-ink-2)]">
             {username ? `Signed in as ${username}. ` : ''}
             Stage 2 — the flow works; the catalogue is next.

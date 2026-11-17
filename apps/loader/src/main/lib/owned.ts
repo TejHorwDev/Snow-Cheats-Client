@@ -1,7 +1,7 @@
 /*
  * Reading the list of products out of an answer whose shape nobody wrote down.
  *
- * `GET /v1/apps` on INDRA Auth returns the products attached to an account. Its
+ * `GET /v1/apps` on SNOW Auth returns the products attached to an account. Its
  * exact shape is not documented anywhere I can read, so this parses it
  * structurally: arrays of strings, arrays of objects, and the handful of wrappers
  * an endpoint like this tends to use. Both ids and names are collected, because

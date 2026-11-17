@@ -17,7 +17,7 @@ export default function LoginPage(): React.JSX.Element {
         <div className="login-mark">
           <span className="brand-mark" aria-hidden="true" />
         </div>
-        <h1 className="login-title">INDRA LOADER</h1>
+        <h1 className="login-title">SNOW LOADER</h1>
         <p className="login-sub">Control panel</p>
 
         {adminReady() ? (

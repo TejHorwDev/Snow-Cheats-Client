@@ -90,7 +90,7 @@ const staged: Catalogue = {
     }
   ],
   config: {
-    website: 'https://indra-cheats.com',
+    website: 'https://snow-cheats.com',
     video: '',
     notice: '',
     maintenance: false,

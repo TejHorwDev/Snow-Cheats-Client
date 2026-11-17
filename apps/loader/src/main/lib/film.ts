@@ -26,11 +26,11 @@ import { discardPartial, downloadToFile } from './downloader'
  * at all — and the next launch does not cost a byte of anybody's egress.
  *
  * A custom scheme rather than `file://` because the renderer is a web page with a strict
- * policy: `file:` is refused, and it should be. `indra-film:` is registered as standard
+ * policy: `file:` is refused, and it should be. `snow-film:` is registered as standard
  * and secure, so a media element treats it exactly like https, ranges included.
  */
 
-const SCHEME = 'indra-film'
+const SCHEME = 'snow-film'
 const FOLDER = 'media'
 const KEEP = 2
 
@@ -113,7 +113,7 @@ export function serveFilm(): void {
   protocol.handle(SCHEME, async (request) => {
     let file = ''
     try {
-      // indra-film://film/<name>
+      // snow-film://film/<name>
       file = new URL(request.url).pathname.replace(/^\/+/, '')
     } catch {
       return new Response('Not found', { status: 404 })

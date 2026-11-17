@@ -30,10 +30,10 @@ export default async function PanelLayout({
     <main className="shell">
       <header className="bar">
         <div className="bar-inner">
-          <Link href="/admin" className="brand" aria-label="INDRA LOADER admin — overview">
+          <Link href="/admin" className="brand" aria-label="SNOW LOADER admin — overview">
             <span className="brand-mark" aria-hidden="true" />
             <span className="wordmark">
-              INDRA LOADER <em>/ admin</em>
+              SNOW LOADER <em>/ admin</em>
             </span>
           </Link>
 

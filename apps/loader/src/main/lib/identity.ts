@@ -5,7 +5,7 @@ import { join } from 'node:path'
 /*
  * Who this app is, said out loud.
  *
- * INDRA HUB and INDRA LOADER install side by side on the same machine. Every
+ * SNOW HUB and SNOW LOADER install side by side on the same machine. Every
  * value below is the difference between two independent applications and one
  * merged mess: a shared userData folder, a shared taskbar group, or a shared
  * single-instance lock would make one app's data, windows or update cache
@@ -17,8 +17,8 @@ import { join } from 'node:path'
  * build if these ever equal the other app's.
  */
 
-export const APP_NAME = 'INDRA LOADER'
-export const APP_ID = 'com.indra.loader'
+export const APP_NAME = 'SNOW LOADER'
+export const APP_ID = 'com.snow.loader'
 
 let applied = false
 
@@ -28,7 +28,7 @@ export function applyIdentity(): void {
 
   app.setName(APP_NAME)
 
-  // %APPDATA%\INDRA LOADER — update payloads, preferences. Nothing sensitive.
+  // %APPDATA%\SNOW LOADER — update payloads, preferences. Nothing sensitive.
   // Created before it is set: Electron refuses a userData path that does not
   // exist, and this runs before anything has had a chance to create it.
   const data = join(app.getPath('appData'), APP_NAME)

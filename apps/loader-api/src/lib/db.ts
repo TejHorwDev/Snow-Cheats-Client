@@ -9,7 +9,7 @@ import { databaseReady, env } from './env'
  * and it never leaves the server.
  *
  * The tables are `loader_apps` and `loader_config`, in the same Supabase project as
- * INDRA HUB. Every other table there is `indra_*` and belongs to the hub; these two
+ * SNOW HUB. Every other table there is `snow_*` and belongs to the hub; these two
  * belong to the loader. Sharing the project costs nothing — the data is a few rows —
  * and keeps one place to look, one bill, and one backup. The prefix is what keeps
  * the two applications out of each other's way.

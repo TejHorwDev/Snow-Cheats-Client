@@ -198,7 +198,7 @@ export default function StorageSettings(): React.JSX.Element {
             type="password"
           />
           <input
-            placeholder="Bucket name, e.g. indra-loader-files"
+            placeholder="Bucket name, e.g. snow-loader-files"
             value={b2.bucket}
             onChange={(event) => setB2({ ...b2, bucket: event.target.value })}
             autoComplete="off"

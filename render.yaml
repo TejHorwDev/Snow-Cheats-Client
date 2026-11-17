@@ -1,16 +1,15 @@
 # One-click deploy on Render.
 #
 # Render reads this file when a Blueprint is created from the repository, so the
-# panel is a service rather than a set of instructions. The three secrets are
-# marked `sync: false`: Render asks for them once and stores them, which is the
-# only place they should live.
+# panel is a service rather than a set of instructions. The secrets are marked
+# `sync: false`: Render asks for them once and stores them, which is the only place
+# they should live.
 #
-# Vercel works just as well without this file — import the repo, set the root
-# directory to apps/loader-api, add the same variables.
+# Vercel is for apps/site, not this. See the root README.
 
 services:
   - type: web
-    name: indra-loader-api
+    name: snow-loader-api
     runtime: node
     plan: free
     region: singapore
@@ -24,20 +23,30 @@ services:
       - key: NODE_VERSION
         value: 22
 
-      # Database — already migrated, nothing to run.
+      # Database — schema lives in apps/loader-api/supabase/, already applied.
       - key: SUPABASE_URL
-        value: https://cztyznuoferktewdhyji.supabase.co
+        value: https://pqomyuqirfygoccsmbid.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
 
-      # Storage — the bucket is created; this is where new uploads land.
+      # Storage — public bucket, 50 MB per file, artwork and film only.
       - key: SUPABASE_BUCKET
         value: loader-files
 
       # The panel's only account.
       - key: ADMIN_USERNAME
-        value: tej
+        value: snow
       - key: ADMIN_PASSWORD
         sync: false
       - key: ADMIN_SESSION_SECRET
         sync: false
+
+      # The product id the installer presents to /v1/login. Not a secret — it is
+      # compiled into the app — and a mismatch is refused with a sentence.
+      - key: AUTH_APP_ID
+        value: 7cceaf553a603ceb8d54a6c2
+
+      # Left empty on purpose: media is served by the bucket's public URL, never
+      # relayed through this service.
+      - key: PUBLIC_BASE_URL
+        value: ''

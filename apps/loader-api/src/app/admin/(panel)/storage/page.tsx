@@ -180,8 +180,8 @@ export default async function StoragePage(): Promise<React.JSX.Element> {
           </p>
           <pre className="mono hint">{`[
   {
-    "corsRuleName": "indra-panel",
-    "allowedOrigins": ["${env.publicBaseUrl || 'https://indra-loader-api.onrender.com'}"],
+    "corsRuleName": "snow-panel",
+    "allowedOrigins": ["${env.publicBaseUrl || 'https://snow-loader-api.onrender.com'}"],
     "allowedOperations": ["s3_put", "s3_get", "s3_head"],
     "allowedHeaders": ["*"],
     "exposeHeaders": ["etag"],
@@ -199,7 +199,7 @@ export default async function StoragePage(): Promise<React.JSX.Element> {
         <h2>Installers bigger than the ceiling</h2>
         <p className="hint">
           They do not need to go through the panel at all. Every release already
-          publishes <span className="mono">INDRA-LOADER-Setup-&lt;version&gt;.exe</span>{' '}
+          publishes <span className="mono">SNOW-LOADER-Setup-&lt;version&gt;.exe</span>{' '}
           on GitHub, and the loader updates itself from the small payload beside it —
           nobody installs the setup twice. The panel&apos;s Installer field is for builds
           that fit the bucket.

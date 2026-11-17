@@ -5,7 +5,7 @@ import { parseOwned } from '../lib/owned'
 /*
  * What this account owns.
  *
- * INDRA Auth is the only authority here — the loader never decides entitlement
+ * SNOW Auth is the only authority here — the loader never decides entitlement
  * from the catalogue, a licence string or anything cached on disk.
  *
  * `GET /v1/apps` answers with the products attached to the signed-in account. The
@@ -43,7 +43,7 @@ export async function entitlementReport(): Promise<EntitlementReport> {
       /*
        * The bearer header is the convention; the second is the other convention this
        * kind of service uses. Sending both costs nothing and removes a round trip
-       * spent discovering which one INDRA Auth wants — 401 with a single header
+       * spent discovering which one SNOW Auth wants — 401 with a single header
        * tells you nothing about the answer behind it.
        */
       headers: {
@@ -55,7 +55,7 @@ export async function entitlementReport(): Promise<EntitlementReport> {
     })
 
     if (!response.ok) {
-      lastError = `INDRA Auth answered ${response.status}.`
+      lastError = `SNOW Auth answered ${response.status}.`
       lastCount = 0
       return { ok: false, status: response.status, count: 0, ids: [], error: lastError }
     }
@@ -68,8 +68,8 @@ export async function entitlementReport(): Promise<EntitlementReport> {
   } catch (error) {
     lastError =
       error instanceof Error && error.name === 'AbortError'
-        ? 'INDRA Auth did not answer in time.'
-        : 'Could not reach INDRA Auth.'
+        ? 'SNOW Auth did not answer in time.'
+        : 'Could not reach SNOW Auth.'
     lastCount = 0
     return { ok: false, status: 0, count: 0, ids: [], error: lastError }
   } finally {

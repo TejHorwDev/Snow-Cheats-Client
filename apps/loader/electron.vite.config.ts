@@ -8,11 +8,13 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     /*
      * The catalogue's address is baked in at build time: an installed app has no
-     * environment to read. Set INDRA_LOADER_API on the release job and every
+     * environment to read. Set SNOW_LOADER_API on the release job and every
      * installer after that points at it.
      */
     define: {
-      __LOADER_API__: JSON.stringify(process.env.INDRA_LOADER_API ?? '')
+      __LOADER_API__: JSON.stringify(
+        process.env.SNOW_LOADER_API ?? process.env.INDRA_LOADER_API ?? ''
+      )
     },
     resolve: {
       alias: {

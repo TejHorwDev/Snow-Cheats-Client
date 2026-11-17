@@ -20,7 +20,9 @@ import type { Catalogue, LoaderApp, LoaderConfig } from '@shared/types'
 declare const __LOADER_API__: string
 
 const API_BASE = (
-  typeof __LOADER_API__ === 'string' && __LOADER_API__ ? __LOADER_API__ : (process.env['INDRA_LOADER_API'] ?? '')
+  typeof __LOADER_API__ === 'string' && __LOADER_API__
+    ? __LOADER_API__
+    : (process.env['SNOW_LOADER_API'] ?? process.env['INDRA_LOADER_API'] ?? '')
 ).replace(/\/+$/, '')
 
 /** Where this service lives. The updater asks it before it asks GitHub. */

@@ -26,7 +26,7 @@ const started = Date.now()
 
 interface Report {
   ok: boolean
-  service: 'indra-loader-api'
+  service: 'snow-loader-api'
   uptime: number
   checks: { database: 'up' | 'down' | 'not-configured'; storage: string }
   time: string
@@ -49,7 +49,7 @@ async function report(): Promise<Report> {
 
   return {
     ok: true,
-    service: 'indra-loader-api',
+    service: 'snow-loader-api',
     // Seconds. Enough to tell a restart from a long-running instance.
     uptime: Math.round((Date.now() - started) / 1000),
     checks: { database, storage: driver() },

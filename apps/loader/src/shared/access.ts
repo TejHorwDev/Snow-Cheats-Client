@@ -9,7 +9,7 @@ import type { LoaderApp } from './types'
  *      from sale, or under maintenance, or a build that is broken. It applies to
  *      everyone, including people who paid.
  *
- *   2. Entitlement. Whether this account owns the product, which INDRA Auth
+ *   2. Entitlement. Whether this account owns the product, which SNOW Auth
  *      answers, never this app and never the database.
  *
  * A card is openable only when both say yes. Keeping the rule in one function

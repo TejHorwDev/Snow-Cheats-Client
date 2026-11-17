@@ -346,7 +346,7 @@ export default function Settings({
             <Setting label="Build">
               {version?.packaged ? 'Installed copy' : 'Development copy'}
             </Setting>
-            <Setting label="Application">INDRA LOADER</Setting>
+            <Setting label="Application">SNOW LOADER</Setting>
             <Setting label="Video decode">
               {video
                 ? video.hardware

@@ -11,7 +11,7 @@ import { startWithLaunchCard } from './launch'
 import { runLaunchCard } from './splash'
 
 /*
- * INDRA LOADER.
+ * SNOW LOADER.
  *
  * A 900x550 fixed window that draws its own frame: frameless, transparent only
  * at the four corner arcs, radius 18. The app is a single page, so there is one
@@ -51,8 +51,8 @@ const isDev = !app.isPackaged
  *
  * Two copies would mean two windows over the same sign-in and, worse, the
  * updater replacing a payload under a live process. The second launch focuses
- * the first. The lock is keyed on the userData folder, which is why INDRA HUB
- * and INDRA LOADER can both run at once.
+ * the first. The lock is keyed on the userData folder, which is why SNOW HUB
+ * and SNOW LOADER can both run at once.
  */
 if (!app.requestSingleInstanceLock()) {
   app.exit(0)
@@ -88,9 +88,9 @@ const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data: https:",
   // The sign-in film, served from the panel's storage. `https:` because the
   // admin panel sets it and it lives in a bucket, not in the installer.
-  // https: for the film before it is cached; indra-film: once it is, which is a
+  // https: for the film before it is cached; snow-film: once it is, which is a
   // local file served by this process and needs no network at all.
-  "media-src 'self' blob: https: indra-film:",
+  "media-src 'self' blob: https: snow-film:",
   "font-src 'self'",
   "connect-src 'none'",
   "base-uri 'none'",
@@ -167,7 +167,7 @@ function createWindow(options: { deferred?: boolean } = {}): BrowserWindow {
     if (/^https?:\/\//i.test(target)) void shell.openExternal(target)
   })
 
-  const devTools = process.env['INDRA_LOADER_DEVTOOLS'] === '1'
+  const devTools = process.env['SNOW_LOADER_DEVTOOLS'] ?? process.env['INDRA_LOADER_DEVTOOLS'] === '1'
   mainWindow.webContents.on('before-input-event', (event, input) => {
     // F12 opens devtools in development, and is swallowed in the installed app.
     if (input.key === 'F12' && input.type === 'keyDown') {

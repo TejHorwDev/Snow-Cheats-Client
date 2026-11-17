@@ -3,7 +3,7 @@ import { compareVersions } from './version'
 /*
  * Finding *this* app's newest release.
  *
- * INDRA HUB and INDRA LOADER are published from one repository, so the familiar
+ * SNOW HUB and SNOW LOADER are published from one repository, so the familiar
  * `releases/latest` is the wrong question: it answers with whichever app
  * released most recently. A loader asking it would eventually download the hub's
  * payload and boot it, which is the single most expensive mistake this updater

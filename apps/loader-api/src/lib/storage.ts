@@ -696,7 +696,7 @@ export async function removeObject(key: string): Promise<void> {
 export async function probeStorage(): Promise<{ ok: boolean; driver: Driver; message: string }> {
   const active = driver()
   const key = `probes/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.txt`
-  const body = 'indra loader storage probe'
+  const body = 'snow loader storage probe'
 
   try {
     if (active === 'local') {

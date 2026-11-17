@@ -25,7 +25,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const work = join(tmpdir(), 'indra-loader-sim')
+const work = join(tmpdir(), 'snow-loader-sim')
 
 let failures = 0
 
@@ -120,8 +120,8 @@ async function main() {
 
   check(
     'builds the manifest URL from the tag',
-    releases.manifestUrl('TejHorwDev/INDRA-HUB', 'loader-v1.0.1') ===
-      'https://github.com/TejHorwDev/INDRA-HUB/releases/download/loader-v1.0.1/payload.json'
+    releases.manifestUrl('TejHorwDev/Snow-Cheats-Client', 'loader-v1.0.1') ===
+      'https://github.com/TejHorwDev/Snow-Cheats-Client/releases/download/loader-v1.0.1/payload.json'
   )
 
   /* ------------------------------------------------------------- 2. payload */
@@ -136,7 +136,7 @@ async function main() {
   })
 
   const body = 'payload for 1.0.1'
-  const file = 'INDRA-LOADER-Payload-1.0.1.asar.download'
+  const file = 'SNOW-LOADER-Payload-1.0.1.asar.download'
   const path = join(userData, 'update')
   mkdirSync(path, { recursive: true })
   writeFileSync(join(path, file), body)
