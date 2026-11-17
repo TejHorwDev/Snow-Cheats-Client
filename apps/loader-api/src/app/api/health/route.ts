@@ -2,6 +2,7 @@ import { databaseReady } from '@/lib/env'
 import { db } from '@/lib/db'
 import { driver } from '@/lib/storage'
 import { ensureStorageConfig } from '@/lib/storage-config'
+import { upstreamBase } from '@/lib/upstream'
 
 /*
  * GET  /api/health
@@ -29,6 +30,16 @@ interface Report {
   service: 'snow-loader-api'
   uptime: number
   checks: { database: 'up' | 'down' | 'not-configured'; storage: string }
+  /*
+   * Who checks a password, said out loud.
+   *
+   * "Wrong username or password" is the same sentence whether the account does not
+   * exist, exists in the other system, or was created against a different app id —
+   * and there is no way to tell those apart from the sign-in screen. This answers it
+   * from outside, without a log or a shell: which mode is live, where it delegates
+   * to, and which app id a build must be carrying to be let in.
+   */
+  auth: { mode: 'upstream' | 'local'; upstream: string | null; app_id: string }
   time: string
 }
 
@@ -53,6 +64,11 @@ async function report(): Promise<Report> {
     // Seconds. Enough to tell a restart from a long-running instance.
     uptime: Math.round((Date.now() - started) / 1000),
     checks: { database, storage: driver() },
+    auth: {
+      mode: upstreamBase() ? 'upstream' : 'local',
+      upstream: upstreamBase(),
+      app_id: (process.env['AUTH_APP_ID'] ?? '').trim()
+    },
     time: new Date().toISOString()
   }
 }
