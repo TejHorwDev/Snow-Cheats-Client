@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { appIdAccepted, clearAttempts, clientAddress, hashPassword, normaliseUsername, tooManyAttempts } from '@/lib/accounts'
 import { codeDigest, redeemLicence } from '@/lib/licenses'
-import { upstreamCall, upstreamEnabled, unreachable } from '@/lib/upstream'
+import { upstreamAppId, upstreamCall, upstreamEnabled, unreachable } from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -31,7 +31,10 @@ export async function POST(request: Request): Promise<Response> {
   if (upstreamEnabled()) {
     const forwarded = (await request.json().catch(() => null)) as Record<string, unknown> | null
     if (!forwarded) return detail('Send username, password and a licence key.', 400)
-    const answer = await upstreamCall('/v1/register', { method: 'POST', body: forwarded })
+    const answer = await upstreamCall('/v1/register', {
+      method: 'POST',
+      body: { ...forwarded, app_id: upstreamAppId(forwarded['app_id']) }
+    })
     if (!answer) return unreachable()
     return Response.json(answer.body ?? {}, {
       status: answer.status,

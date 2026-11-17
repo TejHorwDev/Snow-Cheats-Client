@@ -39,7 +39,13 @@ interface Report {
    * from outside, without a log or a shell: which mode is live, where it delegates
    * to, and which app id a build must be carrying to be let in.
    */
-  auth: { mode: 'upstream' | 'local'; upstream: string | null; app_id: string }
+  auth: {
+    mode: 'upstream' | 'local'
+    upstream: string | null
+    app_id: string
+    /** The id actually sent upstream when it differs from the build's. */
+    upstream_app_id: string | null
+  }
   time: string
 }
 
@@ -67,7 +73,8 @@ async function report(): Promise<Report> {
     auth: {
       mode: upstreamBase() ? 'upstream' : 'local',
       upstream: upstreamBase(),
-      app_id: (process.env['AUTH_APP_ID'] ?? '').trim()
+      app_id: (process.env['AUTH_APP_ID'] ?? '').trim(),
+      upstream_app_id: (process.env['AUTH_UPSTREAM_APP_ID'] ?? '').trim() || null
     },
     time: new Date().toISOString()
   }

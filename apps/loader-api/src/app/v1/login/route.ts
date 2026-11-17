@@ -10,7 +10,7 @@ import {
   verifyPassword
 } from '@/lib/accounts'
 import { bindDevice } from '@/lib/licenses'
-import { unreachable, upstreamCall, upstreamEnabled } from '@/lib/upstream'
+import { unreachable, upstreamAppId, upstreamCall, upstreamEnabled } from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -63,7 +63,10 @@ export async function POST(request: Request): Promise<Response> {
     const forwarded = (await request.json().catch(() => null)) as Record<string, unknown> | null
     if (!forwarded) return detail('Enter username & password', 400)
 
-    const answer = await upstreamCall('/v1/login', { method: 'POST', body: forwarded })
+    const answer = await upstreamCall('/v1/login', {
+      method: 'POST',
+      body: { ...forwarded, app_id: upstreamAppId(forwarded['app_id']) }
+    })
     if (!answer) return unreachable()
     return Response.json(answer.body ?? { detail: 'The sign-in service said nothing.' }, {
       status: answer.status,
