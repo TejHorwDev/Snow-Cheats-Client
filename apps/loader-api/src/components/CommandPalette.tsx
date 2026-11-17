@@ -26,7 +26,6 @@ type Item = {
 const ITEMS: Item[] = [
   { label: 'Overview', href: '/admin', hint: 'section' },
   { label: 'Products', href: '/admin/apps', hint: 'section' },
-  { label: 'Accounts', href: '/admin/accounts', hint: 'section' },
   { label: 'Storage', href: '/admin/storage', hint: 'section' },
   { label: 'Settings', href: '/admin/settings', hint: 'section' },
   { label: 'Sign-in film', href: '/admin/settings', hint: 'appearance' },
@@ -34,7 +33,6 @@ const ITEMS: Item[] = [
   { label: 'Website link', href: '/admin/settings', hint: 'links' },
   { label: 'Catalogue feed', href: '/api/loader/apps', hint: 'endpoint', external: true },
   { label: 'Loader config', href: '/api/loader/config', hint: 'endpoint', external: true },
-  { label: 'Entitlements feed', href: '/v1/apps', hint: 'endpoint', external: true },
   { label: 'Health', href: '/api/health', hint: 'endpoint', external: true }
 ]
 
