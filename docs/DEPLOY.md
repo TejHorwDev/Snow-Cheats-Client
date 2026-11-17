@@ -183,21 +183,40 @@ directly.
 
 ## 4. The Windows installer
 
-**Built and published** — tag `loader-v1.0.0`, workflow
-`.github/workflows/loader-release.yml`, green on the first run.
-<https://github.com/TejHorwDev/Snow-Cheats-Client/releases/tag/loader-v1.0.0>
+**Built and published** by `.github/workflows/loader-release.yml`, a tag push
+starting it — currently `loader-v1.0.1`:
+<https://github.com/TejHorwDev/Snow-Cheats-Client/releases/tag/loader-v1.0.1>
 
 | Asset | What it is |
 | --- | --- |
-| `SNOW-LOADER-Setup-1.0.0.exe` | the installer customers download |
-| `SNOW-LOADER-Payload-1.0.0.asar` | what an installed copy updates with |
+| `SNOW-LOADER-Setup-<version>.exe` | the installer customers download |
+| `SNOW-LOADER-<version>-x64.zip` | the same app, unzipped, for a machine that refuses the installer |
+| `SNOW-LOADER-Payload-<version>.asar` | what an installed copy updates with |
 | `payload.json` | version, file, size, SHA-256 for the updater |
 
 The installer link, if you want to paste it into **Settings → Download**:
 
 ```
-https://github.com/TejHorwDev/Snow-Cheats-Client/releases/download/loader-v1.0.0/SNOW-LOADER-Setup-1.0.0.exe
+https://github.com/TejHorwDev/Snow-Cheats-Client/releases/download/loader-v1.0.1/SNOW-LOADER-Setup-1.0.1.exe
 ```
+
+### If the installer shows an empty wizard
+
+Version 1.0.0 shipped electron-builder's default assisted installer, which opens
+on a hand-drawn "install for all users / only for me" page. On some machines that
+page renders with no text — blank radio labels, blank Next and Cancel buttons.
+Three things now guard against it:
+
+- **1.0.1 removed the page.** `build/installer.nsh` forces current-user install,
+  so the wizard is directory → progress → finish on stock pages only.
+- **One language.** `multiLanguageInstaller: false` means the text is fixed at
+  build time instead of resolved from the OS locale at runtime.
+- **A zip exists.** If a machine still misbehaves, unzip `SNOW-LOADER-<version>-x64.zip`
+  and run `SNOW LOADER.exe` — no wizard involved.
+
+Left empty, **Settings → Download** makes the panel pipe the newest release
+itself — always current, but on the free tier the first byte can take half a
+minute if the instance is asleep.
 
 Pasting it makes every Download button on the site go straight to the file. Left
 empty, the panel pipes the newest release itself — always current, but on the free
@@ -214,9 +233,9 @@ later means a new release rather than a settings change.
 
 ```bash
 cd apps/loader
-npm version patch --no-git-tag-version
-git commit -am "loader: 1.0.1"
-git tag loader-v1.0.1
+npm version patch --no-git-tag-version   # 1.0.1 -> 1.0.2
+git commit -am "loader: 1.0.2"
+git tag loader-v1.0.2
 git push origin main --tags
 ```
 

@@ -1,9 +1,9 @@
 {
   "name": "snow-loader",
   "productName": "SNOW LOADER",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
-  "description": "SNOW LOADER \u2014 app launcher and catalogue",
+  "description": "SNOW LOADER — app launcher and catalogue",
   "author": "TejHorwDev",
   "main": "./out/main/bootstrap.js",
   "engines": {

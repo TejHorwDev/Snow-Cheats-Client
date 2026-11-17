@@ -155,7 +155,7 @@ and paste that link into the panel's **Download** field.
 2. Render, deployed and healthy at `/api/health`.
 3. Vercel, with `SNOW_API` pointing at Render.
 4. Panel: settings, one product, one account.
-5. `apps/loader/package.json` at `1.0.0`, tag `loader-v1.0.0`, push.
+5. `apps/loader/package.json` at `1.0.1`, tag `loader-v1.0.1`, push.
 6. Paste the installer link into the panel.
 7. Download it on a clean Windows machine and sign in.
 
