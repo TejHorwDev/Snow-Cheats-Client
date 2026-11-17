@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; media-src 'self' file: blob:; font-src 'self'"
+    />
+    <title>SNOW LOADER Setup</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!--
+      The film, when this build was given one. `app.js` points it at a real file
+      path handed over by the main process; if that file is missing or will not
+      decode, the element is removed and the window is a plain near-black frame.
+      Nothing about the install depends on it.
+    -->
+    <div class="backdrop" aria-hidden="true">
+      <video class="backdrop__video" id="video" autoplay muted loop playsinline preload="auto"></video>
+      <div class="backdrop__scrim"></div>
+    </div>
+
+    <main class="window" role="main">
+      <header class="titlebar">
+        <div class="brand">
+          <svg class="brand__mark" viewBox="0 0 256 256" aria-hidden="true">
+            <path d="M128 14 143 96 214 56 158 128 214 200 143 160 128 242 113 160 42 200 98 128 42 56 113 96Z" />
+          </svg>
+          <span class="brand__name">SNOW LOADER</span>
+          <span class="brand__rule" aria-hidden="true"></span>
+          <span class="brand__suffix">Setup</span>
+        </div>
+        <div class="titlebar__controls">
+          <button class="winbtn" data-win="minimise" aria-label="Minimise" title="Minimise">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7" /></svg>
+          </button>
+          <button class="winbtn" data-win="close" aria-label="Close" title="Close">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="rail">
+          <p class="rail__label">Installation</p>
+          <ol class="steps">
+            <li class="step is-active" data-step="options">
+              <span class="step__dot" aria-hidden="true"></span>
+              <span class="step__copy">
+                <span class="step__title">Options</span>
+                <span class="step__hint">Install folder</span>
+              </span>
+            </li>
+            <li class="step" data-step="ready">
+              <span class="step__dot" aria-hidden="true"></span>
+              <span class="step__copy">
+                <span class="step__title">Review</span>
+                <span class="step__hint">Confirm</span>
+              </span>
+            </li>
+            <li class="step" data-step="installing">
+              <span class="step__dot" aria-hidden="true"></span>
+              <span class="step__copy">
+                <span class="step__title">Install</span>
+                <span class="step__hint">Copying files</span>
+              </span>
+            </li>
+            <li class="step" data-step="completed">
+              <span class="step__dot" aria-hidden="true"></span>
+              <span class="step__copy">
+                <span class="step__title">Finish</span>
+                <span class="step__hint">Ready to open</span>
+              </span>
+            </li>
+          </ol>
+        </aside>
+
+        <section class="pane">
+          <!-- ---------------- options ---------------- -->
+          <div class="screen is-current" data-screen="options">
+            <p class="eyebrow">Step 1 of 4</p>
+            <h1 class="page-title">Where should it go?</h1>
+
+            <div class="choices" role="radiogroup" aria-label="Who to install for">
+              <button class="choice is-selected" role="radio" aria-checked="true" data-scope="user">
+                <span class="choice__dot" aria-hidden="true"></span>
+                <span class="choice__copy">
+                  <span class="choice__title">Only for me</span>
+                  <span class="choice__hint">No administrator needed</span>
+                </span>
+              </button>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="path">Install folder</label>
+              <div class="field__row">
+                <input
+                  class="input"
+                  id="path"
+                  type="text"
+                  spellcheck="false"
+                  autocomplete="off"
+                  aria-describedby="path-hint"
+                />
+                <button class="btn btn--ghost" id="browse" type="button">Browse…</button>
+              </div>
+              <p class="field__hint" id="path-hint">
+                SNOW LOADER is created inside this folder. Downloaded apps and your licence stay in your user folder, so moving the app never moves them.
+              </p>
+            </div>
+          </div>
+
+          <!-- ---------------- ready ---------------- -->
+          <div class="screen" data-screen="ready">
+            <p class="eyebrow">Step 2 of 4</p>
+            <h1 class="page-title">Ready to install</h1>
+
+            <dl class="review">
+              <div class="review__row">
+                <dt>Install for</dt>
+                <dd id="review-scope">Only me</dd>
+              </div>
+              <div class="review__row">
+                <dt>Folder</dt>
+                <dd class="review__path" id="review-path"></dd>
+              </div>
+              <div class="review__row">
+                <dt>Shortcuts</dt>
+                <dd>Desktop and Start menu</dd>
+              </div>
+              <div class="review__row">
+                <dt>Version</dt>
+                <dd id="review-version">1.0.2</dd>
+              </div>
+            </dl>
+
+            <p class="error" id="error" role="alert" hidden></p>
+          </div>
+
+          <!-- ---------------- installing ---------------- -->
+          <div class="screen" data-screen="installing">
+            <p class="eyebrow">Step 3 of 4</p>
+            <h1 class="page-title">Installing SNOW LOADER</h1>
+            <p class="page-lede" id="install-stage" aria-live="polite">Preparing…</p>
+
+            <div
+              class="progress"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+              aria-labelledby="install-stage"
+              id="bar"
+            >
+              <span class="progress__fill" id="fill"></span>
+            </div>
+            <div class="progress__meta">
+              <span id="install-note">This takes a few seconds.</span>
+              <span class="progress__percent" id="percent">0%</span>
+            </div>
+            <p class="note">Do not close this window until it finishes.</p>
+          </div>
+
+          <!-- ---------------- completed ---------------- -->
+          <div class="screen" data-screen="completed">
+            <p class="eyebrow">Step 4 of 4</p>
+            <h1 class="page-title">Installed</h1>
+            <p class="page-lede" id="completed-path" aria-live="polite"></p>
+
+            <label class="checkbox">
+              <input type="checkbox" id="launch" checked />
+              <span class="checkbox__box" aria-hidden="true"></span>
+              <span>Open SNOW LOADER now</span>
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <footer class="footer">
+        <div class="footer__meta">
+          <span class="footer__name">SNOW LOADER</span>
+          <span class="footer__version" id="version">v1.0.2</span>
+        </div>
+        <div class="footer__actions">
+          <button class="btn btn--ghost" id="cancel" type="button">Cancel</button>
+          <button class="btn btn--primary" id="next" type="button">Continue</button>
+        </div>
+      </footer>
+    </main>
+
+    <script src="app-folder.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -149,6 +149,26 @@ jobs:
       - name: Package the Windows installer
         run: npx electron-builder --win --publish never
 
+      # The file people actually double-click. It is an Electron window
+      # (apps/loader/installer) that runs the installer above silently, because
+      # the stock NSIS wizard opens on a page whose text is resolved at runtime
+      # and renders blank on some machines — a wizard with no words on it.
+      - name: Build the installer window
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.value }}"
+          New-Item -ItemType Directory -Force -Path installer/payload | Out-Null
+          Copy-Item "release/SNOW-LOADER-Setup-$version.exe" "installer/payload/loader-setup.exe" -Force
+          Push-Location installer
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version='$version';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+          npm ci
+          npm run sim:ui
+          npx electron-builder --win --publish never
+          Pop-Location
+          $built = "installer/dist/SNOW-LOADER-Installer-$version.exe"
+          if (!(Test-Path $built)) { throw "the installer window was not produced" }
+          Get-Item $built | Select-Object Name, Length
+
       # The in-app update. One small archive of the compiled app plus a manifest
       # that names it, its size and its SHA-256. An installed copy downloads
       # these instead of the ~120 MB installer, so updating costs seconds.
@@ -219,6 +239,7 @@ jobs:
           tag_name: loader-v${{ steps.version.outputs.value }}
           name: SNOW LOADER v${{ steps.version.outputs.value }}
           files: |
+            apps/loader/installer/dist/SNOW-LOADER-Installer-*.exe
             apps/loader/release/SNOW-LOADER-Setup-*.exe
             apps/loader/release/SNOW-LOADER-*-x64.zip
             apps/loader/release/SNOW-LOADER-Payload-*.asar
@@ -233,6 +254,7 @@ jobs:
         with:
           name: snow-loader-windows
           path: |
+            apps/loader/installer/dist/SNOW-LOADER-Installer-*.exe
             apps/loader/release/SNOW-LOADER-Setup-*.exe
             apps/loader/release/SNOW-LOADER-*-x64.zip
             apps/loader/release/SNOW-LOADER-Payload-*.asar
