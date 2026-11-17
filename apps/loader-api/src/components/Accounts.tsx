@@ -41,6 +41,10 @@ export default function Accounts(): React.JSX.Element {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [note, setNote] = useState('')
+  const [productId, setProductId] = useState('')
+  const [days, setDays] = useState('30')
+  const [deviceLimit, setDeviceLimit] = useState('1')
+  const [mintedKey, setMintedKey] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
 
@@ -85,14 +89,52 @@ export default function Accounts(): React.JSX.Element {
     }
   }
 
+  /** Like send(), but hands back the body — creating an account returns its key. */
+  async function post(path: string, method: string, payload: unknown): Promise<unknown | null> {
+    setBusy(path)
+    setStatus(null)
+    try {
+      const response = await fetch(path, {
+        method,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!response.ok) {
+        const detail = (await response.json().catch(() => ({}))) as { error?: string }
+        setStatus(detail.error ?? `That did not work (HTTP ${response.status}).`)
+        return null
+      }
+      await load()
+      return await response.json().catch(() => ({}))
+    } catch {
+      setStatus('Could not reach the server.')
+      return null
+    } finally {
+      setBusy(null)
+    }
+  }
+
   async function create(event: React.FormEvent): Promise<void> {
     event.preventDefault()
-    if (await send('/api/admin/accounts', 'POST', { username, password, note })) {
-      setStatus(`“${username.trim().toLowerCase()}” can sign in now.`)
-      setUsername('')
-      setPassword('')
-      setNote('')
-    }
+    const made = await post('/api/admin/accounts', 'POST', {
+      username,
+      password,
+      note,
+      productId: productId || undefined,
+      days: days.trim() === '' ? null : Number(days),
+      deviceLimit: Number(deviceLimit)
+    })
+    if (!made) return
+    const licence = (made as { licence?: { code: string } }).licence
+    setMintedKey(licence?.code ?? null)
+    setStatus(
+      licence
+        ? `“${username.trim().toLowerCase()}” can sign in now, with the product attached.`
+        : `“${username.trim().toLowerCase()}” can sign in now — no product yet, so every card stays locked.`
+    )
+    setUsername('')
+    setPassword('')
+    setNote('')
   }
 
   async function grant(user: User, productId: string): Promise<void> {
@@ -151,6 +193,48 @@ export default function Accounts(): React.JSX.Element {
               />
             </div>
           </div>
+          <div className="row" style={{ alignItems: 'flex-start', marginTop: 12 }}>
+            <div className="field" style={{ flex: 2, minWidth: 200 }}>
+              <label className="label" htmlFor="product">
+                Product
+              </label>
+              <select
+                id="product"
+                value={productId}
+                onChange={(event) => setProductId(event.target.value)}
+              >
+                <option value="">No product yet</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field" style={{ flex: 1, minWidth: 130 }}>
+              <label className="label" htmlFor="days">
+                Days
+              </label>
+              <input
+                id="days"
+                value={days}
+                inputMode="numeric"
+                placeholder="empty = lifetime"
+                onChange={(event) => setDays(event.target.value)}
+              />
+            </div>
+            <div className="field" style={{ flex: 1, minWidth: 130 }}>
+              <label className="label" htmlFor="devices">
+                Devices
+              </label>
+              <input
+                id="devices"
+                value={deviceLimit}
+                inputMode="numeric"
+                onChange={(event) => setDeviceLimit(event.target.value)}
+              />
+            </div>
+          </div>
           <button
             className="btn primary"
             type="submit"
@@ -160,6 +244,11 @@ export default function Accounts(): React.JSX.Element {
           </button>
         </form>
         {status ? <p className="hint" style={{ marginTop: 10 }}>{status}</p> : null}
+        {mintedKey ? (
+          <p className="hint" style={{ marginTop: 6 }}>
+            Licence key (shown once): <span className="mono">{mintedKey}</span>
+          </p>
+        ) : null}
       </div>
 
       <div className="card">

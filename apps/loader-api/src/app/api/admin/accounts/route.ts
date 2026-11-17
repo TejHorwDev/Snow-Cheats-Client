@@ -1,6 +1,7 @@
 import { currentSession } from '@/lib/auth'
 import { db, listApps } from '@/lib/db'
 import { hashPassword, normaliseUsername } from '@/lib/accounts'
+import { mintLicences, redeemLicence } from '@/lib/licenses'
 import { body, fail, ok, serverError, text } from '@/lib/http'
 import { databaseReady } from '@/lib/env'
 
@@ -91,7 +92,57 @@ export async function POST(request: Request): Promise<Response> {
       throw new Error(error.message)
     }
 
-    return ok({ id: (data as { id: string }).id }, { status: 201 })
+    const userId = (data as { id: string }).id
+
+    /*
+     * The one-step version of the workflow: create the account, and if a product
+     * was chosen, mint a key for it and redeem it straight away.
+     *
+     * This is the same thing the example project's portal did — pick a product,
+     * type a username and password, choose days and devices, done — except the key
+     * falls out of it here as well, so the owner can hand over either the login or
+     * the key. Without a product the account exists and owns nothing, which is a
+     * legitimate state: every card stays locked until something is granted.
+     */
+    const productId = text(payload?.['productId'], 64).trim()
+    if (!productId) return ok({ id: userId }, { status: 201 })
+
+    const rawDays = payload?.['days']
+    const days = rawDays === null || rawDays === '' || rawDays === undefined ? null : Number(rawDays)
+    if (days !== null && (!Number.isFinite(days) || days < 1 || days > 36500)) {
+      return fail('Days must be between 1 and 36500, or empty for lifetime.')
+    }
+
+    const deviceLimit = Number(payload?.['deviceLimit'] ?? 1)
+    if (!Number.isFinite(deviceLimit) || deviceLimit < 1 || deviceLimit > 100) {
+      return fail('Devices must be between 1 and 100.')
+    }
+
+    const [minted] = await mintLicences({
+      productId,
+      days,
+      deviceLimit: Math.floor(deviceLimit),
+      count: 1,
+      note: `for ${username}`
+    })
+
+    const redeemed = await redeemLicence(minted.code, userId)
+    if (!redeemed.ok) {
+      return fail(redeemed.message ?? 'The account was created but its licence did not apply.', 409)
+    }
+
+    return ok(
+      {
+        id: userId,
+        licence: {
+          code: minted.code,
+          days,
+          deviceLimit: Math.floor(deviceLimit),
+          expires: redeemed.expiresAt ?? null
+        }
+      },
+      { status: 201 }
+    )
   } catch (error) {
     return serverError('admin/accounts:create', error)
   }
