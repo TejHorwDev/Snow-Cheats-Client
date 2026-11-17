@@ -68,6 +68,29 @@ export async function POST(request: Request): Promise<Response> {
       body: { ...forwarded, app_id: upstreamAppId(forwarded['app_id']) }
     })
     if (!answer) return unreachable()
+
+    /*
+     * The app id is compiled into the installer, so if the upstream's application
+     * carries a different one, a perfectly good password comes back rejected — a
+     * message about the password, caused by an id.
+     *
+     * One retry, with the id left out, separates the two: if the account is real and
+     * only the id is wrong, the upstream signs them in, and what they may open is
+     * still decided by /v1/apps, which lists their assignments. If the password was
+     * wrong, the retry fails the same way and costs nothing.
+     *
+     * Not a loop, not a list of guesses: a single second attempt, and only after the
+     * upstream has already said no.
+     */
+    if (answer.status >= 400 && answer.status < 500 && answer.status !== 429) {
+      const withoutId = { ...forwarded }
+      delete withoutId['app_id']
+      const retry = await upstreamCall('/v1/login', { method: 'POST', body: withoutId })
+      if (retry && retry.status < 300) return Response.json(retry.body ?? {}, {
+        status: retry.status,
+        headers: { 'cache-control': 'no-store' }
+      })
+    }
     return Response.json(answer.body ?? { detail: 'The sign-in service said nothing.' }, {
       status: answer.status,
       headers: { 'cache-control': 'no-store' }
