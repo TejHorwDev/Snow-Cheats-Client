@@ -2,7 +2,7 @@ import { databaseReady } from '@/lib/env'
 import { db } from '@/lib/db'
 import { driver } from '@/lib/storage'
 import { ensureStorageConfig } from '@/lib/storage-config'
-import { upstreamBase } from '@/lib/upstream'
+import { loginAttempts, upstreamBase } from '@/lib/upstream'
 
 /*
  * GET  /api/health
@@ -47,6 +47,8 @@ interface Report {
     app_id: string
     /** The id actually sent upstream when it differs from the build's. */
     upstream_app_id: string | null
+    /** The last five sign-in attempts as the panel answered them. */
+    last_login_attempts: { app_id: string; status: number; detail: string; at: string }[]
   }
   time: string
 }
@@ -101,7 +103,8 @@ async function report(): Promise<Report> {
       upstream: upstreamBase(),
       upstream_reachable: await probeUpstream(),
       app_id: (process.env['AUTH_APP_ID'] ?? '').trim(),
-      upstream_app_id: (process.env['AUTH_UPSTREAM_APP_ID'] ?? '').trim() || null
+      upstream_app_id: (process.env['AUTH_UPSTREAM_APP_ID'] ?? '').trim() || null,
+      last_login_attempts: loginAttempts()
     },
     time: new Date().toISOString()
   }

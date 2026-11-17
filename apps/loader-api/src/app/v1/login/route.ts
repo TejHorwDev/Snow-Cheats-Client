@@ -10,7 +10,14 @@ import {
   verifyPassword
 } from '@/lib/accounts'
 import { bindDevice } from '@/lib/licenses'
-import { appProblem, unreachable, upstreamAppId, upstreamCall, upstreamEnabled } from '@/lib/upstream'
+import {
+  appProblem,
+  noteAttempt,
+  unreachable,
+  upstreamAppId,
+  upstreamCall,
+  upstreamEnabled
+} from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -97,6 +104,7 @@ export async function POST(request: Request): Promise<Response> {
       body: { ...forwarded, app_id: upstreamAppId(forwarded['app_id']) }
     })
     if (!answer) return unreachable()
+    noteAttempt(String(upstreamAppId(forwarded['app_id']) ?? '(none)'), answer)
 
     /*
      * The app id is compiled into the installer, so it belongs to whoever built that
@@ -119,6 +127,7 @@ export async function POST(request: Request): Promise<Response> {
           method: 'POST',
           body: { ...forwarded, app_id: candidate }
         })
+        noteAttempt(candidate, attempt)
         if (attempt && attempt.status < 300) {
           console.error('[v1/login] signed in with app id', candidate, '— set AUTH_UPSTREAM_APP_ID to this to skip the search')
           return Response.json(attempt.body ?? {}, {
@@ -131,6 +140,7 @@ export async function POST(request: Request): Promise<Response> {
       const withoutId = { ...forwarded }
       delete withoutId['app_id']
       const retry = await upstreamCall('/v1/login', { method: 'POST', body: withoutId })
+      noteAttempt(null, retry)
       if (retry && retry.status < 300) {
         return Response.json(retry.body ?? {}, {
           status: retry.status,
