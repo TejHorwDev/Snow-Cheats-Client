@@ -12,11 +12,15 @@ import {
 import { bindDevice } from '@/lib/licenses'
 import {
   appProblem,
+  deviceProblem,
   noteAttempt,
+  recallAppId,
+  rememberAppId,
   unreachable,
   upstreamAppId,
   upstreamCall,
-  upstreamEnabled
+  upstreamEnabled,
+  type UpstreamAnswer
 } from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
@@ -28,8 +32,8 @@ export const dynamic = 'force-dynamic'
  *
  * The catalogue is the only place these are written down: every product row's
  * "SNOW Auth app id" was copied out of that panel by the owner. Anything blank is
- * skipped, duplicates are collapsed, and the list stops at three — this is a
- * recovery, not a search.
+ * skipped, duplicates are collapsed, and the list stops at twelve — this is a
+ * recovery, not a search, but an owner may well have more than three applications.
  */
 async function appIdCandidates(): Promise<string[]> {
   if (!databaseReady()) return []
@@ -45,7 +49,7 @@ async function appIdCandidates(): Promise<string[]> {
       .map((row) => String((row as { keyauth_app_id?: string }).keyauth_app_id ?? '').trim())
       .filter(Boolean)
 
-    return [...new Set(ids)].slice(0, 3)
+    return [...new Set(ids)].slice(0, 12)
   } catch {
     return []
   }
@@ -99,58 +103,73 @@ export async function POST(request: Request): Promise<Response> {
     const forwarded = (await request.json().catch(() => null)) as Record<string, unknown> | null
     if (!forwarded) return detail('Enter username & password', 400)
 
-    const answer = await upstreamCall('/v1/login', {
-      method: 'POST',
-      body: { ...forwarded, app_id: upstreamAppId(forwarded['app_id']) }
-    })
-    if (!answer) return unreachable()
-    noteAttempt(String(upstreamAppId(forwarded['app_id']) ?? '(none)'), answer)
+    const username = String(forwarded['username'] ?? '')
+    const builtIn = String(upstreamAppId(forwarded['app_id']) ?? '')
 
     /*
-     * The app id is compiled into the installer, so it belongs to whoever built that
-     * installer — and a deployment whose panel knows different applications answers
-     * "Application not available" for a password that is perfectly correct.
+     * Which id to present.
      *
-     * So: when the refusal is about the application and not the person, try the ids
-     * this deployment actually publishes — the catalogue's own app ids, which the
-     * owner copied out of that panel — and finally no id at all. The first sign-in
-     * that succeeds wins, and what the account may open is still decided by
-     * /v1/apps, never by this guess.
+     * The id is compiled into the installer, so it belongs to whoever built it — and
+     * the panel this deployment answers to has applications of its own. The order is:
+     * the id that signed this username in last time, then the build's, then every id
+     * the catalogue publishes. First success wins.
      *
-     * Bounded on purpose: at most three candidates, and only after the panel has
-     * named the application as the problem. A wrong password is never retried, so a
-     * typo costs one attempt, not a ladder.
+     * What an account may open is never decided here: /v1/apps answers that, from the
+     * panel, every launch.
      */
-    if (appProblem(answer)) {
-      for (const candidate of await appIdCandidates()) {
-        const attempt = await upstreamCall('/v1/login', {
-          method: 'POST',
-          body: { ...forwarded, app_id: candidate }
-        })
-        noteAttempt(candidate, attempt)
-        if (attempt && attempt.status < 300) {
-          console.error('[v1/login] signed in with app id', candidate, '— set AUTH_UPSTREAM_APP_ID to this to skip the search')
-          return Response.json(attempt.body ?? {}, {
-            status: attempt.status,
-            headers: { 'cache-control': 'no-store' }
-          })
-        }
-      }
+    const order: string[] = []
+    const remembered = recallAppId(username)
+    if (remembered) order.push(remembered)
+    if (builtIn) order.push(builtIn)
+    for (const candidate of await appIdCandidates()) if (!order.includes(candidate)) order.push(candidate)
 
-      const withoutId = { ...forwarded }
-      delete withoutId['app_id']
-      const retry = await upstreamCall('/v1/login', { method: 'POST', body: withoutId })
-      noteAttempt(null, retry)
-      if (retry && retry.status < 300) {
-        return Response.json(retry.body ?? {}, {
-          status: retry.status,
+    let answer: UpstreamAnswer | null = null
+    let refusal: UpstreamAnswer | null = null
+
+    for (const [index, candidate] of order.entries()) {
+      /* The build's own id is the one the reference loader used; it is not ours to skip. */
+      const attempt = await upstreamCall('/v1/login', {
+        method: 'POST',
+        body: { ...forwarded, app_id: candidate }
+      })
+      noteAttempt(candidate, attempt)
+
+      if (attempt && attempt.status < 300) {
+        rememberAppId(username, candidate)
+        return Response.json(attempt.body ?? {}, {
+          status: attempt.status,
           headers: { 'cache-control': 'no-store' }
         })
       }
+
+      /*
+       * A device refusal is the answer, not a reason to keep looking: the password was
+       * right, this application knows the account, and the only thing left is a slot.
+       * Walking on from here is how "Device limit reached" became "Application not
+       * available" on somebody's screen.
+       */
+      if (attempt && deviceProblem(attempt)) {
+        return Response.json(attempt.body ?? {}, {
+          status: attempt.status,
+          headers: { 'cache-control': 'no-store' }
+        })
+      }
+
+      if (!answer) answer = attempt
+      /* The most recent refusal is the most informative one: it came from the id that
+         got furthest. */
+      refusal = attempt ?? refusal
+      /* A first refusal about the person needs no more ids. */
+      if (index === 0 && attempt && !appProblem(attempt)) break
     }
 
-    return Response.json(answer.body ?? { detail: 'The sign-in service said nothing.' }, {
-      status: answer.status,
+    if (answer && !appProblem(answer)) {
+      /* The first id was refused for a reason about the person — that is the answer. */
+    }
+
+    const last = refusal ?? answer
+    return Response.json(last?.body ?? { detail: 'The sign-in service said nothing.' }, {
+      status: last?.status ?? 503,
       headers: { 'cache-control': 'no-store' }
     })
   }

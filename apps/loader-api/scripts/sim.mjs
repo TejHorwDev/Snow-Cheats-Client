@@ -511,12 +511,15 @@ async function main() {
   }
   const loginSource = readFileSync(join(root, 'src/app/v1/login/route.ts'), 'utf8')
   check('an application refusal is told apart from a wrong password', /mentionsApp/.test(upstreamLib) && /mentionsRejection/.test(upstreamLib))
-  check('the recovery uses the catalogue’s own ids, at most three', /slice\(0, 3\)/.test(loginSource) && /keyauth_app_id/.test(loginSource))
-  check('a wrong password never walks the id list', /if \(appProblem\(answer\)\)/.test(loginSource))
+  check('the recovery uses the catalogue’s own ids', /keyauth_app_id/.test(loginSource) && /slice\(0, 12\)/.test(loginSource))
+  check('a wrong password never walks the id list', /if \(index === 0 && attempt && !appProblem\(attempt\)\) break/.test(loginSource))
 
-  check('a foreign app id cannot block a good password', /withoutId\['app_id'\]|withoutId\.app_id/.test(loginSource) && /delete withoutId/.test(loginSource))
-  /* The ladder is three shapes of one call: the build's id, a catalogue id, no id. */
-  check('the recovery is bounded, not a search', (loginSource.match(/upstreamCall\('\/v1\/login'/g) ?? []).length === 3 && /slice\(0, 3\)/.test(loginSource))
+  check('a foreign app id cannot block a good password', /for \(const candidate of await appIdCandidates\(\)\)/.test(loginSource))
+  /* One attempt per candidate id — remembered, the build's, then the catalogue's. */
+  check('the recovery walks a bounded list, not an infinite one', /for \(const \[index, candidate\] of order.entries\(\)\)/.test(loginSource))
+  check('a device refusal stops the walk and is returned as-is', /deviceProblem\(attempt\)/.test(loginSource) && /deviceProblem/.test(upstreamLib))
+  check('the id that worked is remembered for next time', /rememberAppId\(username, candidate\)/.test(loginSource))
+  check('the catalogue list is capped', /slice\(0, 12\)/.test(loginSource))
   check('the owner’s panel is the default, not this deployment', /DEFAULT_UPSTREAM = 'https:\/\/indra-auth\.onrender\.io'/.test(upstreamLib) || /DEFAULT_UPSTREAM = 'https:\/\/indra-auth\.onrender\.com'/.test(upstreamLib))
 
   const appsSource = readFileSync(join(root, 'src/app/v1/apps/route.ts'), 'utf8')
