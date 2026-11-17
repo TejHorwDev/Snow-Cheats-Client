@@ -23,6 +23,67 @@ export interface LaunchResult {
 
 const EARLY_EXIT_MS = 1_400
 
+/** Windows' own number for "this program requires elevation". */
+const ELEVATION_REQUIRED = 740
+
+/**
+ * Did Windows refuse to start it because the program wants administrator rights?
+ *
+ * Node reports it three ways depending on the build: `EACCES`, `EPERM`, or the raw
+ * Windows code 740 in the message. A cheat almost always asks for elevation, so this
+ * is the common case, not the exotic one — and it used to look exactly like a launch
+ * that worked, because the error arrived after the answer had already been given.
+ */
+function needsElevation(error: unknown): boolean {
+  const failure = error as NodeJS.ErrnoException & { errno?: number }
+  if (!failure) return false
+  if (failure.code === 'EACCES' || failure.code === 'EPERM') return true
+  if (failure.errno === ELEVATION_REQUIRED) return true
+  return /elevation|administrator|740|access is denied/i.test(String(failure.message ?? ''))
+}
+
+/*
+ * Start it through the shell's own "run as administrator", which is the only way to
+ * raise the consent prompt from an unelevated process.
+ *
+ * Start-Process -PassThru prints the process id, so the card can still say "Running"
+ * honestly. If the person cancels the prompt, PowerShell exits non-zero and that is
+ * reported as the cancellation it is — not as a launch.
+ */
+function elevated(exe: string): Promise<{ ok: boolean; pid?: number; error?: string }> {
+  return new Promise((resolve) => {
+    const script = [
+      '$ErrorActionPreference = "Stop"',
+      `$p = Start-Process -FilePath '${exe.replace(/'/g, "''")}' ` +
+        `-WorkingDirectory '${dirname(exe).replace(/'/g, "''")}' -Verb RunAs -PassThru`,
+      'Write-Output $p.Id'
+    ].join('; ')
+
+    const child = spawn(
+      'powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+      { windowsHide: true }
+    )
+
+    let out = ''
+    let err = ''
+    child.stdout?.on('data', (chunk) => (out += String(chunk)))
+    child.stderr?.on('data', (chunk) => (err += String(chunk)))
+
+    child.on('error', (error) => {
+      console.error('[launch] elevation could not run', error)
+      resolve({ ok: false, error: 'Windows would not open the administrator prompt.' })
+    })
+
+    child.on('exit', (code) => {
+      const pid = Number.parseInt(out.trim(), 10)
+      if (code === 0 && Number.isFinite(pid) && pid > 0) return resolve({ ok: true, pid })
+      console.error('[launch] elevation declined', code, err.trim().slice(0, 200))
+      resolve({ ok: false, error: 'Administrator permission was cancelled.' })
+    })
+  })
+}
+
 export async function launch(id: string): Promise<LaunchResult> {
   const entry = installed(id)
   if (!entry) return { ok: false, error: 'That application is not installed on this machine.' }
@@ -36,34 +97,58 @@ export async function launch(id: string): Promise<LaunchResult> {
       windowsHide: false
     })
 
-    // A process that failed to spawn reports it asynchronously.
-    child.on('error', (error) => {
-      console.error('[launch] could not start', entry.exe, error)
-      running.delete(id)
-    })
-
     /*
-     * Wait a moment before saying "Launched".
+     * Wait a moment before saying "Launched", and watch both ways it can fail.
      *
-     * A file Windows refuses — blocked, half-downloaded, a missing DLL, a cancelled
-     * elevation prompt — exits immediately, and the old code had already returned
-     * success by then: the card said "Launching" and nothing opened. Anything that dies
-     * within this window is reported as the failure it is, with its exit code.
+     * `spawn` answers with a handle immediately; the truth arrives later as either an
+     * `error` (the file was never started) or an `exit` (it started and died). The old
+     * code listened for neither before returning success, which is why the toast said
+     * "Launching" and nothing ever opened.
      */
-    const early = await new Promise<number | null>((resolve) => {
+    const outcome = await new Promise<{ error?: unknown; code?: number } | null>((resolve) => {
       const timer = setTimeout(() => resolve(null), EARLY_EXIT_MS)
+      child.once('error', (error) => {
+        clearTimeout(timer)
+        resolve({ error })
+      })
       child.once('exit', (code) => {
         clearTimeout(timer)
-        resolve(code ?? 0)
+        resolve({ code: code ?? 0 })
       })
     })
 
-    if (early !== null && early !== 0) {
+    /* Wanted administrator rights: raise the prompt and start it that way. */
+    if (outcome && outcome.error !== undefined && needsElevation(outcome.error)) {
+      const raised = await elevated(entry.exe)
+      if (!raised.ok) {
+        running.delete(id)
+        return { ok: false, error: raised.error }
+      }
+
+      if (raised.pid) {
+        running.set(id, raised.pid)
+        watch(id, raised.pid)
+      }
+      return { ok: true }
+    }
+
+    if (outcome && outcome.error !== undefined) {
       running.delete(id)
-      console.error('[launch] exited immediately', entry.exe, early)
+      const failure = outcome.error as NodeJS.ErrnoException
+      console.error('[launch] could not start', entry.exe, failure)
+      const code = failure.errno ?? failure.code ?? 'unknown'
       return {
         ok: false,
-        error: `Windows closed it straight away (code ${early}). Try running it once from its folder.`
+        error: `Windows would not start it (${code}). If your antivirus removed it, download it again.`
+      }
+    }
+
+    if (outcome && outcome.code !== undefined && outcome.code !== 0) {
+      running.delete(id)
+      console.error('[launch] exited immediately', entry.exe, outcome.code)
+      return {
+        ok: false,
+        error: `Windows closed it straight away (code ${outcome.code}). Try running it once from its folder.`
       }
     }
 
