@@ -21,7 +21,9 @@ export interface LaunchResult {
   error?: string
 }
 
-export function launch(id: string): LaunchResult {
+const EARLY_EXIT_MS = 1_400
+
+export async function launch(id: string): Promise<LaunchResult> {
   const entry = installed(id)
   if (!entry) return { ok: false, error: 'That application is not installed on this machine.' }
   if (!existsSync(entry.exe)) return { ok: false, error: 'The file is missing. Download it again.' }
@@ -39,6 +41,31 @@ export function launch(id: string): LaunchResult {
       console.error('[launch] could not start', entry.exe, error)
       running.delete(id)
     })
+
+    /*
+     * Wait a moment before saying "Launched".
+     *
+     * A file Windows refuses — blocked, half-downloaded, a missing DLL, a cancelled
+     * elevation prompt — exits immediately, and the old code had already returned
+     * success by then: the card said "Launching" and nothing opened. Anything that dies
+     * within this window is reported as the failure it is, with its exit code.
+     */
+    const early = await new Promise<number | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), EARLY_EXIT_MS)
+      child.once('exit', (code) => {
+        clearTimeout(timer)
+        resolve(code ?? 0)
+      })
+    })
+
+    if (early !== null && early !== 0) {
+      running.delete(id)
+      console.error('[launch] exited immediately', entry.exe, early)
+      return {
+        ok: false,
+        error: `Windows closed it straight away (code ${early}). Try running it once from its folder.`
+      }
+    }
 
     child.unref()
     if (typeof child.pid === 'number') {
