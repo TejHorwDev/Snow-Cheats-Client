@@ -1,6 +1,7 @@
 import { sessionFor } from '@/lib/accounts'
 import { db } from '@/lib/db'
 import { grantLive } from '@/lib/licenses'
+import { tokenOf, upstreamCall, upstreamEnabled, unreachable } from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -26,6 +27,18 @@ function deny(message: string): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (upstreamEnabled()) {
+    const token = tokenOf(request)
+    if (!token) return Response.json({ detail: 'Not signed in.' }, { status: 401 })
+    const forwarded = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const answer = await upstreamCall('/v1/check', { method: 'POST', body: forwarded ?? {}, token })
+    if (!answer) return unreachable()
+    return Response.json(answer.body ?? {}, {
+      status: answer.status,
+      headers: { 'cache-control': 'no-store' }
+    })
+  }
+
   if (!databaseReady()) {
     return Response.json({ detail: 'The sign-in service is not configured yet.' }, { status: 503 })
   }
