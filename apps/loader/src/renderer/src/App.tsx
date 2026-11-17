@@ -193,6 +193,8 @@ export default function App(): React.JSX.Element {
 
   /** Which sign-in attempt is current. Anything older is not allowed to finish. */
   const attempt = useRef(0)
+  /** Ids with a launch in flight — the guard against starting two copies. */
+  const launching = useRef(new Set<string>())
 
   const [selected, setSelected] = useState<LoaderApp | null>(null)
   const [installs, setInstalls] = useState<Record<string, InstallView>>({})
@@ -448,8 +450,45 @@ export default function App(): React.JSX.Element {
     [loadLibrary]
   )
 
+  /*
+   * A launched program exits whenever it likes, and nothing tells the renderer.
+   *
+   * The main process notices — its liveness probe clears the pid within three seconds —
+   * but the button reads a snapshot, and a snapshot taken once stays wrong. This is the
+   * cheapest honest fix: while the library is on screen, ask again on a timer and only
+   * re-render when the answer actually changed.
+   */
+  useEffect(() => {
+    if (screen !== 'home') return
+    let alive = true
+
+    const tick = (): void => {
+      void bridge.files.states().then((next) => {
+        if (!alive) return
+        setInstalls((previous) => (JSON.stringify(previous) === JSON.stringify(next) ? previous : next))
+      })
+    }
+
+    const timer = window.setInterval(tick, 2_500)
+    return () => {
+      alive = false
+      window.clearInterval(timer)
+    }
+  }, [screen])
+
   const open = useCallback(
     (app: LoaderApp) => {
+      /*
+       * Fresh facts before the panel is drawn.
+       *
+       * Whether a product is installed, behind, or still running is answered by the
+       * main process, and the panel is the one screen that acts on it. Opening a card
+       * used to reuse whatever the last refresh said — so a program launched and closed
+       * five minutes ago still read as "Running", and the button it disables stayed
+       * dead until the whole library was reloaded.
+       */
+      void bridge.files.states().then(setInstalls)
+
       const reason = lockedReason(app, owned)
       if (!reason) {
         setSelected(app)
@@ -662,13 +701,25 @@ export default function App(): React.JSX.Element {
             })
           }}
           onLaunch={() => {
+            /*
+             * One launch per click. The main process now waits ~1.4s to see whether the
+             * process survives, and a second click during that window would start a
+             * second copy of the program — the one way a launcher can misbehave that the
+             * customer blames on the cheat.
+             */
+            if (launching.current.has(selected.id)) return
+            launching.current.add(selected.id)
+
             void bridge.files.launch(selected.id).then((result) => {
               if (result.ok) {
                 toast(`Launching — ${selected.name}`)
                 void bridge.files.states().then(setInstalls)
               } else {
                 toast(`Could not launch — ${result.error ?? 'unknown error'}`)
+                void bridge.files.states().then(setInstalls)
               }
+            }).finally(() => {
+              launching.current.delete(selected.id)
             })
           }}
         />

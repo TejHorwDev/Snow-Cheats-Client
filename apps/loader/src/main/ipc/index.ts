@@ -163,7 +163,7 @@ export function registerIpc(handlers: Handlers): void {
     typeof id === 'string' ? uninstall(id) : Promise.reject(new Error('bad id'))
   )
   ipcMain.handle('files:launch', (_event, id: unknown) =>
-    typeof id === 'string' ? launch(id) : { ok: false, error: 'bad id' }
+    typeof id === 'string' ? launch(id) : Promise.resolve({ ok: false, error: 'bad id' })
   )
   ipcMain.handle('files:reveal', (_event, id: unknown) => {
     if (typeof id !== 'string') return

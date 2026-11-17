@@ -646,6 +646,15 @@ check('no compiled-in website address left on the landing page', !/https:\/\/sno
 const anywhere = walk(renderer).filter((file) => /instagram|tiktok|youtube/i.test(code(readFileSync(file, 'utf8'))))
 check('no other social channel is mentioned', anywhere.length === 0, anywhere.map((f) => relative(root, f)).join(', '))
 
+console.log('\nLaunching')
+const launchService = code(readFileSync(join(root, 'src/main/services/launch.ts'), 'utf8'))
+check('a program that dies instantly is reported, not called a success', /EARLY_EXIT_MS/.test(launchService) && /Windows closed it straight away/.test(launchService))
+check('and it stops being marked as running when it does', /running\.delete\(id\)\s*\n?\s*console\.error\('\[launch\] exited immediately'/.test(launchService))
+const appSource = code(readFileSync(join(renderer, 'App.tsx'), 'utf8'))
+check('the library asks again on a timer — a closed program brings Launch back', /setInterval\(tick, 2_500\)/.test(appSource))
+check('opening a card refreshes its state first', /void bridge\.files\.states\(\)\.then\(setInstalls\)\s*\n\s*\n\s*const reason/.test(appSource))
+check('one launch per click', /launching\.current\.has/.test(appSource))
+
 console.log('\nThe splash')
 const app = code(readFileSync(join(renderer, 'App.tsx'), 'utf8'))
 const splash = app.match(/SPLASH_MS\s*=\s*([\d_]+)/)
