@@ -1,0 +1,194 @@
+/*
+ * The launch card.
+ *
+ * Its own file, not the app's stylesheet: this page paints before any app code
+ * runs and must look finished in its first frame. Same tokens as the app, so the
+ * card is the app's first frame rather than a different application's.
+ */
+
+:root {
+  --card: #0c0c0f;
+  --edge: rgba(255, 255, 255, 0.07);
+  --ink: #f4f2f8;
+  --ink-muted: rgba(244, 242, 248, 0.38);
+  --track: #22222a;
+  --arc: #e8e8eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  /* The window is transparent; the card is the only thing that exists. */
+  background: transparent;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  width: 100%;
+  height: 100%;
+  padding: 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--edge);
+  border-radius: 16px;
+  /* Matte black, with one soft wash so it is not a flat rectangle. */
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(255, 255, 255, 0.06), transparent 62%),
+    var(--card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: card-in 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/*
+ * The film, and the scrim over it.
+ *
+ * The card carries no title any more: a wordmark, a ring and a sentence in a
+ * 340px box was three ways of saying the same thing. What is left is the part that
+ * changes — the ring turns, the sentence reports what is happening — and the film
+ * behind it, which is what the app looks like anyway, so the card reads as the app
+ * opening rather than as a different program starting first.
+ *
+ * The film fades in only once it can play. A video that is still buffering must not
+ * be a black rectangle where the app's first impression should be.
+ */
+.film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  pointer-events: none;
+}
+
+.film.is-ready {
+  opacity: 0.5;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 70% at 50% 40%, rgba(12, 12, 15, 0.35), rgba(12, 12, 15, 0.86) 78%),
+    linear-gradient(180deg, rgba(12, 12, 15, 0.62), rgba(12, 12, 15, 0.78));
+}
+
+/* Everything that is not the film sits above the scrim. */
+.ring,
+.line {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------------- the ring ---------------- */
+
+.ring {
+  width: 52px;
+  height: 52px;
+}
+
+.ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Slower than a phone spinner: this is a launch, not a button. */
+  animation: turn 1.15s linear infinite;
+}
+
+.track,
+.arc {
+  fill: none;
+  stroke-width: 3;
+}
+
+.track {
+  stroke: var(--track);
+}
+
+.arc {
+  stroke: var(--arc);
+  stroke-linecap: round;
+  /* A quarter of the circle, so the gap is unmistakable at 52px. */
+  stroke-dasharray: 45 140;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------- the line ---------------- */
+
+.line {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.4;
+  text-align: center;
+  transition: opacity 170ms ease;
+}
+
+/* A stage change fades the sentence rather than swapping it mid-word. */
+.line.is-swapping {
+  opacity: 0;
+}
+
+.line.is-final {
+  color: var(--ink);
+}
+
+body.is-closing .card {
+  animation: card-out 200ms ease-in both;
+}
+
+@keyframes card-out {
+  to {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+
+  .ring svg {
+    animation-duration: 2.8s;
+  }
+
+  .line {
+    transition: none;
+  }
+}

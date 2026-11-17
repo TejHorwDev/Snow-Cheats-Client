@@ -1,0 +1,177 @@
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { installed } from '../services/installed'
+import { runningVersion } from '../lib/payload'
+import { currentSession, login, logout } from '../services/auth'
+import { rememberVideo } from '../lib/backdrop-cache'
+import { currentFilmSource, ensureFilm, filmSource } from '../lib/film'
+import { loadCatalogue } from '../services/catalog'
+import { entitlementReport, ownedProductIds } from '../services/entitlement'
+import { cancelDownload, noteCatalogue, startDownload, states, uninstall } from '../services/downloads'
+import { launch } from '../services/launch'
+import {
+  checkForUpdates,
+  diagnoseConnection,
+  installUpdate,
+  noteActivity,
+  noteScreen,
+  updateLog,
+  appliedUpdateVersion,
+  updateState
+} from '../services/updates'
+
+/*
+ * The whole IPC surface, in one place.
+ *
+ * Every channel is named here and nowhere else, so the preload bridge and the
+ * main process cannot drift apart without the type checker noticing. Nothing
+ * handles a path, a URL or a token from the renderer: the renderer asks for
+ * outcomes, not for capabilities.
+ */
+
+interface Handlers {
+  closeWindow: () => void
+  minimizeWindow: () => void
+}
+
+export function registerIpc(handlers: Handlers): void {
+  ipcMain.handle('app:version', () => ({
+    running: runningVersion(),
+    installed: app.getVersion(),
+    packaged: app.isPackaged,
+    /** Non-null when this launch is the updater's, and names what it installed. */
+    updated: appliedUpdateVersion()
+  }))
+
+  ipcMain.handle('update:state', () => updateState())
+  ipcMain.handle('update:check', () => checkForUpdates(true))
+  // A press is not a loop: a person asking clears any guard that was holding back
+  // an automatic restart. See `installUpdate`.
+  ipcMain.handle('update:install', () => installUpdate({ manual: true }))
+  ipcMain.handle('update:diagnose', () => diagnoseConnection())
+  ipcMain.handle('update:log', () => updateLog())
+  ipcMain.on('update:screen', (_event, screen: unknown) => {
+    if (typeof screen === 'string') noteScreen(screen)
+  })
+  /*
+   * What the window is doing — the screen, and whether a field has focus or text in
+   * it. Reported on every focus change, so the updater can restart the moment
+   * nobody is in the middle of anything.
+   */
+  ipcMain.on('update:activity', (_event, activity: unknown) => {
+    if (!activity || typeof activity !== 'object') return
+    const report = activity as { screen?: unknown; typing?: unknown }
+    noteActivity({
+      screen: typeof report.screen === 'string' ? report.screen : undefined,
+      typing: report.typing === true
+    })
+  })
+
+  // The token stays in the main process; the renderer only learns who is signed
+  // in.
+  ipcMain.handle('auth:login', (_event, username: unknown, password: unknown) => {
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      return { ok: false, error: 'Enter username & password' }
+    }
+    return login(username, password)
+  })
+  ipcMain.handle('auth:logout', () => logout())
+  ipcMain.handle('auth:session', () => currentSession())
+
+  // The catalogue and its links. Public data, fetched in the main process so the
+  // renderer still has no network of its own.
+  ipcMain.handle('catalogue:load', async () => {
+    const catalogue = await loadCatalogue()
+
+    /*
+     * Every read of the catalogue is also the moment to notice that a product on this
+     * machine is behind — that is what turns its card into UPDATE. Nothing is fetched
+     * from here: an update is the person's decision, and it starts from the button.
+     */
+    noteCatalogue(catalogue.apps)
+
+    const film = catalogue.config.video
+    // The launch card cannot fetch, so every read leaves a note for next time.
+    rememberVideo(film)
+
+    /*
+     * The film is fetched once and then played from the disk, which is the whole
+     * difference between a backdrop that appears with the window and one that appears
+     * four seconds later after a trip through a free-tier server.
+     *
+     * The download runs in the background and the renderer is told only once it is on
+     * disk — switching a playing video's source mid-film would restart it, so a change is
+     * announced between launches, not during one. What is announced here is a change of
+     * film.
+     */
+    void ensureFilm(film).then((cached) => {
+      if (!cached) return
+      const source = filmSource(film)
+      if (!source) return
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) window.webContents.send('media:film', source)
+      }
+    })
+
+    return catalogue
+  })
+
+  /*
+   * What to point at before anything has been fetched. One question to the process that
+   * already knows, answered from the disk.
+   */
+  ipcMain.handle('media:film', () => currentFilmSource())
+
+  /*
+   * Whether this machine is decoding video with a graphics card or with its processor.
+   *
+   * Chromium knows, and it is the difference between a smooth card and a slideshow — so it
+   * is answerable in Settings instead of guessed at from a distance.
+   */
+  ipcMain.handle('app:video', () => {
+    const features = app.getGPUFeatureStatus()
+    const decode = features.video_decode ?? 'unknown'
+    return {
+      hardware: decode.startsWith('enabled'),
+      decode,
+      rasterization: features.rasterization ?? 'unknown',
+      compositing: features.gpu_compositing ?? 'unknown'
+    }
+  })
+  ipcMain.handle('auth:probe', () => entitlementReport())
+  ipcMain.handle('auth:owned', () => ownedProductIds())
+
+  /*
+   * Links open in the real browser, and only https links do. The renderer cannot
+   * ask for anything else, and a `file:` or `javascript:` URL is dropped here
+   * rather than handed to the shell.
+   */
+  ipcMain.handle('links:open', async (_event, url: unknown) => {
+    if (typeof url !== 'string' || !/^https:\/\//i.test(url)) return
+    await shell.openExternal(url)
+  })
+
+  /* ------------------------------------------------------------------ files */
+
+  ipcMain.handle('files:states', () => states())
+  ipcMain.handle('files:download', (_event, id: unknown) =>
+    typeof id === 'string' ? startDownload(id) : Promise.reject(new Error('bad id'))
+  )
+  ipcMain.handle('files:cancel', (_event, id: unknown) =>
+    typeof id === 'string' ? cancelDownload(id) : Promise.reject(new Error('bad id'))
+  )
+  ipcMain.handle('files:uninstall', (_event, id: unknown) =>
+    typeof id === 'string' ? uninstall(id) : Promise.reject(new Error('bad id'))
+  )
+  ipcMain.handle('files:launch', (_event, id: unknown) =>
+    typeof id === 'string' ? launch(id) : { ok: false, error: 'bad id' }
+  )
+  ipcMain.handle('files:reveal', (_event, id: unknown) => {
+    if (typeof id !== 'string') return
+    // Only a path this app recorded, never one the renderer supplied.
+    const entry = installed(id)
+    if (entry) shell.showItemInFolder(entry.exe)
+  })
+
+  ipcMain.on('window:close', handlers.closeWindow)
+  ipcMain.on('window:minimize', handlers.minimizeWindow)
+}

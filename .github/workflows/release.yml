@@ -1,0 +1,207 @@
+name: Build Windows release
+
+# Three ways to start it:
+#   • push a tag like v1.0.1  → builds and publishes a GitHub Release
+#   • push the `release` branch → same, with the tag taken from package.json
+#   • "Run workflow"          → builds and leaves the installer as an artifact
+#
+# The `release` branch exists because a tag is the one ref an automated session
+# cannot always push. package.json is the source of truth for the version, and
+# the published tag is always `v<version>` — so a build can never be released
+# under a name the app will not compare against.
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - release
+  workflow_dispatch:
+
+# The release step needs to create a Release and upload the installer to it.
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+    # The app lives one level down now, so every command runs there and only
+    # the paths that a GitHub action reads (files:, path:, cache) are written
+    # from the repository root.
+    defaults:
+      run:
+        working-directory: apps/desktop
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # One version for the artifact names, the payload and the release tag. A
+      # tag that disagrees with package.json is a mistake, not a release name,
+      # so it is refused here rather than shipped as a version nobody compares.
+      - name: Read the version being released
+        id: version
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing $version"
+          if [ "${{ startsWith(github.ref, 'refs/tags/') }}" = "true" ]; then
+            if [ "v$version" != "${{ github.ref_name }}" ]; then
+              echo "package.json says $version but the tag is ${{ github.ref_name }}" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Refuse to ship a release that does not compile
+        run: npm run typecheck
+
+      - name: Compile main, preload and renderer
+        run: npm run build
+
+      # 2.9.6 shipped an installer whose window could not open: main.js required
+      # a file the packaging step did not copy. The check is cheap, it runs
+      # before anything is built, and it is the only place that knows both what
+      # the code requires and what the file list ships.
+      - name: Check the installer's own files
+        run: npm run sim:installer
+
+      - name: Package the Windows installer
+        run: npx electron-builder --win --publish never
+
+      # The in-app update. One small archive of the compiled app plus a manifest
+      # that names it, its size and its SHA-256. An installed copy downloads
+      # these instead of the 120 MB installer, so updating costs seconds and
+      # never runs an installer again.
+      - name: Pack the in-app update payload
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.value }}"
+          $tag = "v$version"
+
+          # The archive root must mirror the app directory: main/, preload/,
+          # renderer/. The bootstrap loads <payload>/main/index.js, and getting
+          # this wrong would make every update silently fail to apply — so it is
+          # asserted below rather than discovered by a user.
+          New-Item -ItemType Directory -Force -Path payload | Out-Null
+          Copy-Item -Path out/* -Destination payload -Recurse
+
+          $asar = "release/INDRA-HUB-Payload-$version.asar"
+          npx --no-install asar pack payload $asar
+          if (!(Test-Path $asar)) { throw "The update payload was not produced" }
+
+          $listing = (npx --no-install asar list $asar) -join "`n"
+          if ($listing -notmatch 'main[\\/]index\.js') {
+            throw "The update payload does not contain main/index.js — the bootstrap could not load it"
+          }
+          if ($listing -notmatch 'renderer[\\/]index\.html') {
+            throw "The update payload does not contain renderer/index.html"
+          }
+
+          $file = "INDRA-HUB-Payload-$version.asar"
+          $hash = (Get-FileHash "release/$file" -Algorithm SHA256).Hash.ToLower()
+          $size = (Get-Item "release/$file").Length
+          $url = "https://github.com/${{ github.repository }}/releases/download/$tag/$file"
+
+          [ordered]@{
+            version = $version
+            file    = $file
+            sha256  = $hash
+            size    = $size
+            url     = $url
+          } | ConvertTo-Json -Compress | Set-Content -NoNewline "release/payload.json"
+
+          Get-Content "release/payload.json"
+          Get-ChildItem release | Select-Object Name, Length
+
+      # The custom install window, built here and attached to the same release
+      # as an extra file. It is not what the updater reads — payload.json and
+      # latest.yml still come from the stock build — but it means one release
+      # page carries both, with names that say which is which.
+      - name: Put the stock installer inside the custom one
+        shell: bash
+        run: |
+          mkdir -p installer/payload
+          cp "release/INDRA-HUB-Setup-${{ steps.version.outputs.value }}.exe" installer/payload/inder-setup.exe
+          npm pkg set "version=${{ steps.version.outputs.value }}" --prefix installer
+
+      - name: Install the installer's own dependencies
+        working-directory: apps/desktop/installer
+        run: npm install --no-audit --no-fund
+
+      - name: Build the custom installer
+        working-directory: apps/desktop/installer
+        run: npx electron-builder --win --publish never
+
+      - name: Move it beside the stock installer
+        shell: bash
+        run: |
+          cp installer/dist/*.exe "release/INDRA-HUB-Custom-Setup-${{ steps.version.outputs.value }}.exe"
+          ls -l release/*.exe
+
+      - name: Show what was produced
+        run: |
+          Get-ChildItem release | Select-Object Name, Length
+        shell: pwsh
+
+      # A release without these two files installs fine but can never update
+      # itself, so fail the build instead of shipping a silent dead end.
+      - name: Confirm the update feed is wired into the build
+        run: |
+          if (!(Test-Path "release/win-unpacked/resources/app-update.yml")) {
+            throw "app-update.yml is missing — self-update would be dead on arrival"
+          }
+          if (!(Test-Path "release/latest.yml")) {
+            throw "latest.yml is missing — installed copies could not see this release"
+          }
+          Get-Content "release/win-unpacked/resources/app-update.yml"
+          Get-Content "release/latest.yml"
+        shell: pwsh
+
+      # A tag push, the release branch, or a manual run that asked to publish.
+      # The tag is always v<package.json version>, so the app's own comparison
+      # (which reads the manifest, not the tag) and the download URL agree.
+      - name: Publish the Release
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: INDRA HUB v${{ steps.version.outputs.value }}
+          # latest.yml is what installed copies read to notice a newer version;
+          # the blockmaps make the download incremental. Without them the
+          # installer works but nothing can update itself.
+          files: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/latest.yml
+            apps/desktop/release/*.blockmap
+            apps/desktop/release/INDRA-HUB-Payload-*.asar
+            apps/desktop/release/payload.json
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+
+      # Manual runs still give a downloadable installer, attached to the run.
+      - name: Upload the installer as a run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: indra-hub-windows
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.yml
+            apps/desktop/release/INDRA-HUB-Payload-*.asar
+            apps/desktop/release/payload.json
+          if-no-files-found: error

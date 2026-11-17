@@ -1,0 +1,617 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens.
+ *
+ * Matte black, white, and the greys between them. Nothing else.
+ *
+ * The accent used to be a violet — the one colour in an otherwise monochrome app,
+ * which made every dot, focus ring and progress bar read as decoration. It is white
+ * now: hierarchy comes from size, weight and the amount of light on a surface, which
+ * is what the black is for. A single colour in an interface like this stops being an
+ * accent and becomes a theme, and a theme is a thing to argue with.
+ */
+@theme {
+  /* Deeper than the first pass: matte black is near-black, not dark grey. */
+  --color-bg: #070708;
+  --color-surface: #0c0c0f;
+  --color-raised: #131317;
+  --color-ink: #f4f2f8;
+  --color-ink-2: rgba(242, 240, 246, 0.62);
+  --color-ink-3: rgba(242, 240, 246, 0.38);
+  --color-accent: #ededf0;
+  --color-accent-deep: #b6b6bb;
+  --color-success: #34c395;
+  --color-danger: #e2695e;
+
+  --radius-window: 18px;
+
+  /* The one easing curve the whole app uses. */
+  --ease-silk: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+:root {
+  --hairline: rgba(255, 255, 255, 0.065);
+  --hairline-strong: rgba(255, 255, 255, 0.13);
+  --lift: 0 24px 60px -20px rgba(0, 0, 0, 0.85);
+  --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  /* The window is transparent only at the corner arcs. */
+  background: transparent;
+}
+
+body {
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', Inter, Arial, sans-serif;
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  cursor: default;
+  overflow: hidden;
+}
+
+/* The window itself: fixed 900x550, 18px arcs, everything clipped inside. */
+/*
+ * The window.
+ *
+ * Nothing here is a drag region. Making the whole window draggable is the obvious
+ * way to get a movable frameless window and it is wrong: on Windows the drag
+ * region swallows mouse input — every button, every slider, the whole page — so
+ * the app looks fine and answers nothing.
+ *
+ * Dragging is a strip, below, and nothing else.
+ */
+.shell {
+  position: relative;
+  width: 900px;
+  height: 550px;
+  border-radius: var(--radius-window);
+  overflow: hidden;
+  background: var(--color-bg);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/*
+ * The drag strip.
+ *
+ * Forty pixels along the top, stopping short of the window controls so they stay
+ * clickable, and above the screens in paint order. Everything below it behaves
+ * like an ordinary window again.
+ */
+.drag-strip {
+  position: absolute;
+  top: 0;
+  /*
+   * The strip stops short of every control in the top bar.
+   *
+   * It used to run from the left edge to 104px from the right, forty pixels tall and
+   * above the screens — which is a drag region drawn straight over the back button at
+   * top 14 and the settings gear at top 12. A drag region swallows the pointer: no
+   * hover, no click, and the cursor never changes. Close and minimise worked because
+   * they sit inside the 104px the strip left alone; everything on the left did not.
+   *
+   * 76px clears the back button, 120px clears the gear. What is left is still the
+   * whole middle of the title bar.
+   */
+  left: 76px;
+  right: 120px;
+  height: 40px;
+  z-index: 40;
+  -webkit-app-region: drag;
+}
+
+/*
+ * Anything the pointer has to reach inside a drag region.
+ *
+ * Belt and braces: the strip no longer covers these, but a control that is drawn over
+ * a drag region must say so or the window moves instead of the control answering.
+ */
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/*
+ * Silk: three off-centre radial washes plus a fixed grain.
+ *
+ * Completely static — no animation, no canvas, no per-frame cost — and it reads
+ * as fabric rather than as a gradient someone liked.
+ */
+/* ---------------------------------------------------------------- curtain ---- */
+
+/*
+ * The four seconds after a sign-in.
+ *
+ * The library is mounted underneath this, at zero opacity, doing all of its work where
+ * nobody can see it assembling: catalogue, then every image decoded, then every clip
+ * fetched and looping. The curtain is what makes that time invisible instead of a grid
+ * popping in one card at a time.
+ *
+ * Opacity, never `display: none` — a hidden element still paints, and a video that is
+ * painting is a video that is already at speed when it is uncovered.
+ */
+.curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  /*
+   * The film stays visible. It is the room; covering it with a flat colour made the app
+   * look switched off for four seconds, which is worse than any spinner.
+   *
+   * So: a scrim, not a lid. Dark enough that the circle and its hairline sit on calm
+   * ground, open enough that the film keeps moving behind them. There is deliberately no
+   * `backdrop-filter` — a full-screen blur recomputed over a playing video every frame is
+   * what starved the spinner in the first place, and a gradient is free.
+   */
+  background:
+    radial-gradient(62% 58% at 50% 46%, rgba(7, 7, 8, 0.42), rgba(7, 7, 8, 0.72) 58%, rgba(7, 7, 8, 0.86) 100%);
+  opacity: 1;
+  transition: opacity 700ms var(--ease-silk);
+}
+
+.curtain[data-out='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* One path, one transform — the arc sweeps without touching the main thread. */
+/* The circle, and (only if the wait is broken) the sentence that admits it. */
+.curtain-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.spinner {
+  color: #ffffff;
+  /*
+   * No filter here, on purpose. A `drop-shadow` on an element that is rotated every
+   * frame has to be re-rasterised every frame — on a busy machine that is the difference
+   * between a smooth turn and a stutter. The arc is bright enough to carry itself.
+   */
+  animation: spin 1s linear infinite;
+  will-change: transform;
+  transform-origin: 50% 50%;
+  transform: rotate(0deg);
+}
+
+/* The grid arrives on the tail of the curtain rather than behind it. */
+.library-stage {
+  animation: stage-in 520ms var(--ease-silk) both;
+}
+
+@keyframes stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Static silk: the base layer under everything, and the whole backdrop on
+   screens that are not sign-in. */
+.silk::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 18% 0%, rgba(255, 255, 255, 0.05), transparent 55%),
+    radial-gradient(100% 80% at 92% 12%, rgba(255, 255, 255, 0.03), transparent 60%),
+    radial-gradient(140% 120% at 50% 118%, rgba(255, 255, 255, 0.022), transparent 62%),
+    radial-gradient(90% 70% at 50% 50%, rgba(0, 0, 0, 0.4), transparent 70%);
+  pointer-events: none;
+}
+
+.silk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* A surface: hairline, lift, machined top edge. No blur, no glow. */
+.panel {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: var(--lift), var(--sheen);
+}
+
+.wordmark {
+  background: linear-gradient(180deg, #ffffff 0%, #f2f2f4 58%, #cfcfd4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* A glyph arriving. Short, small, once. */
+@keyframes glyph-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.glyph {
+  display: inline-block;
+  animation: glyph-in 420ms var(--ease-silk) both;
+}
+
+@keyframes rule-in {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.rule {
+  height: 1px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.5), transparent);
+  animation: rule-in 600ms var(--ease-silk) both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-up {
+  animation: fade-up 320ms var(--ease-silk) both;
+}
+
+/*
+ * Nothing in the app moves for a user who asked it not to — except the one thing whose
+ * motion is information rather than decoration.
+ *
+ * A spinner is the only way to tell "working" from "frozen", so the blanket rule below
+ * takes it down to a single 1ms iteration and holds it there, which is exactly what a
+ * hung app looks like. It keeps turning. Everything else stays still.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .spinner {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+    animation-timing-function: linear !important;
+  }
+}
+
+.drag {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/*
+ * The sign-in backdrop.
+ *
+ * Two violet washes drifting on separate, very slow cycles. It is the motion of a
+ * background video without a background video: nothing is decoded, nothing is
+ * downloaded, and it scales to any window without banding.
+ *
+ * `will-change: transform` keeps each layer on its own compositor plane, so this
+ * costs nothing on a machine that already has a GPU.
+ */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(46px);
+  will-change: transform;
+}
+
+.backdrop .wash-a {
+  width: 760px;
+  height: 640px;
+  left: -180px;
+  top: -220px;
+  background: radial-gradient(circle, rgba(157, 144, 196, 0.28), transparent 62%);
+  animation: drift-a 34s var(--ease-silk) infinite;
+}
+
+.backdrop .wash-b {
+  width: 700px;
+  height: 600px;
+  right: -200px;
+  top: -120px;
+  background: radial-gradient(circle, rgba(112, 104, 158, 0.24), transparent 64%);
+  animation: drift-b 46s var(--ease-silk) infinite;
+}
+
+.backdrop .wash-c {
+  width: 900px;
+  height: 460px;
+  left: 40px;
+  bottom: -260px;
+  background: radial-gradient(circle, rgba(84, 78, 124, 0.22), transparent 66%);
+  animation: drift-a 58s var(--ease-silk) infinite reverse;
+}
+
+/* Keeps the middle calm so type stays readable over the motion. */
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 60% at 50% 45%, transparent 20%, rgba(7, 7, 8, 0.55) 100%);
+}
+
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(70px, 40px, 0) scale(1.12);
+  }
+}
+
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.06);
+  }
+  50% {
+    transform: translate3d(-60px, 55px, 0) scale(1);
+  }
+}
+
+/*
+ * The film.
+ *
+ * Dimmer than it would be on a dedicated screen, because it sits behind cards,
+ * tables and form fields for the whole life of the window. Loud enough to be
+ * noticed, quiet enough to read over.
+ */
+/*
+ * Two layers, cross-faded. `loop` would be one line, but a loop is a seek to zero and
+ * a seek is a visible freeze on a large film — so the standby layer fades in just before
+ * the playing one ends and the join is never seen.
+ *
+ * Only the front layer decodes; the other is paused on its first frame until it is
+ * needed, which keeps a 4K film from costing two decoders all the time.
+ */
+.backdrop-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 420ms linear;
+  will-change: opacity;
+  /*
+   * How soft the film sits, and how dark. Both come from the panel — `--film-blur` in
+   * pixels, `--film-dim` as a fraction — so the person who owns the film can dial it
+   * until product names read, without waiting for a release.
+   */
+  filter: blur(var(--film-blur, 0px));
+  transform: scale(var(--film-scale, 1));
+  transform-origin: center;
+}
+
+/*
+ * The darkening. It sits above the film and below the vignette, and it is a plain
+ * rectangle — the `.backdrop span` rule above is for the washes, so this one has to
+ * undo the circle and the blur it would otherwise inherit.
+ */
+.backdrop .film-dim {
+  inset: 0;
+  border-radius: 0;
+  filter: none;
+  background: #070708;
+  opacity: var(--film-dim, 0);
+  will-change: opacity;
+  z-index: 1;
+}
+
+.backdrop-video[data-front='true'] {
+  opacity: 0.42;
+}
+
+/* With a film behind it, the wash needs a darker scrim or every label on the
+   dashboard turns into a guessing game. */
+.backdrop[data-video='true']::after {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(7, 7, 8, 0.62) 0%,
+      rgba(7, 7, 8, 0.46) 42%,
+      rgba(7, 7, 8, 0.68) 100%
+    ),
+    radial-gradient(78% 66% at 50% 46%, transparent 18%, rgba(7, 7, 8, 0.55) 100%);
+}
+
+.settings-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.settings-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.settings-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * Browser preview.
+ *
+ * The window is transparent in Electron so the 18px corner arcs are real. In a
+ * browser there is nothing behind it, so it is centred on a near-black page with
+ * a shadow — same components, same 900x550 frame, judged as the app.
+ */
+html[data-mode='web'] body {
+  background: #07070a;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+html[data-mode='web'] .shell {
+  box-shadow:
+    0 40px 120px -30px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------------- rail ---- */
+
+/*
+ * A page of cards arriving.
+ *
+ * Three at a time, and the rest after a slide — not three shrinking cards, because
+ * a card that is 40px narrower than the one beside it stops reading as artwork.
+ * Transform and opacity only, so this costs no layout on a machine that may be
+ * running a game behind it.
+ */
+/*
+ * The carousel.
+ *
+ * The track holds every card, side by side, and a move is a translation of the whole
+ * track — so the cards you were looking at are the cards sliding away, not a different
+ * set that appeared in their place. Nothing is mounted or unmounted on a move, which is
+ * what makes the motion continuous instead of a cut with a wipe over it.
+ *
+ * `will-change` keeps the track on its own compositor layer for the duration of the
+ * window's life rather than promoting it at the start of every move.
+ */
+.carousel {
+  overflow: hidden;
+  /* The cards are dragged with the mouse; text selection during a drag looks broken. */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  /* Vertical wheel scrolls the strip, not the page. */
+  touch-action: pan-y;
+}
+
+.carousel[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+.card-track {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  /*
+   * The stop is the whole point. A linear or an ease-in-out move of this distance reads
+   * as mechanical; this curve leaves quickly and settles for the last third, which is
+   * what makes a thing feel like it has weight.
+   */
+  transition: transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Mid-drag the track must be under the pointer, not chasing it. */
+.card-track[data-moving='false'] {
+  transition: none;
+}
+
+/* One card's worth of track. */
+.slot {
+  height: 100%;
+  flex: 0 0 auto;
+}
+
+/* A drag is not a hover: no card lifts while the strip is being thrown. */
+.carousel[data-dragging='true'] .slot > * {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-track {
+    transition: none;
+  }
+}
+
+/*
+ * The indeterminate download stripe.
+ *
+ * Used only when the server sends no length, which after the range fix should be never
+ * — but an interface that shows 0% while bytes arrive is indistinguishable from a frozen
+ * one, so the fallback moves.
+ */
+.download-stripe {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 10%) 40%,
+    rgb(255 255 255 / 18%) 50%,
+    rgb(255 255 255 / 10%) 60%,
+    transparent 100%
+  );
+  animation: download-stripe 1.4s linear infinite;
+}
+
+@keyframes download-stripe {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .download-stripe {
+    animation: none;
+    width: 100%;
+    opacity: 0.35;
+  }
+}
