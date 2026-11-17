@@ -506,6 +506,12 @@ async function main() {
       file)
     check(`and forwards to ${call}`, source.includes(`'${call}'`))
   }
+  const loginSource = readFileSync(join(root, 'src/app/v1/login/route.ts'), 'utf8')
+  check('a foreign app id cannot block a good password', /withoutId\['app_id'\]|withoutId\.app_id/.test(loginSource) && /delete withoutId/.test(loginSource))
+  check('the retry is one attempt, not a loop', (loginSource.match(/upstreamCall\('\/v1\/login'/g) ?? []).length === 2)
+  check('a rate limit is not retried', /!== 429/.test(loginSource))
+  check('the owner’s panel is the default, not this deployment', /DEFAULT_UPSTREAM = 'https:\/\/indra-auth\.onrender\.io'/.test(upstreamLib) || /DEFAULT_UPSTREAM = 'https:\/\/indra-auth\.onrender\.com'/.test(upstreamLib))
+
   const appsSource = readFileSync(join(root, 'src/app/v1/apps/route.ts'), 'utf8')
   check('the caller’s own token travels to the upstream', /tokenOf\(request\)/.test(appsSource))
   check('no upstream token is written down', !/auth_sessions/.test(appsSource.split('if (upstreamEnabled())')[1]?.split('if (!databaseReady()')[0] ?? 'auth_sessions'))
