@@ -75,6 +75,7 @@ function withCap<T>(work: Promise<T>, fallback: T): Promise<T> {
 
 const EMPTY_CONFIG: LoaderConfig = {
   website: '',
+  discord: '',
   video: '',
   notice: '',
   maintenance: false,
@@ -520,6 +521,7 @@ export default function App(): React.JSX.Element {
             setScreen('signin')
           }}
           onExternal={confirmExternal}
+          discord={config.discord}
         />
       ) : null}
 

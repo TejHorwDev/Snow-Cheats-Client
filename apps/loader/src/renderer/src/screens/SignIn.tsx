@@ -188,7 +188,7 @@ export default function SignIn({ onBack, onSubmit, error, busy }: Props): React.
         className="absolute text-center text-[10px] text-[var(--color-ink-3)]"
         style={{ left: 317, top: 404, width: 266 }}
       >
-        No account yet? Licences are sold on the website.
+        No account yet? Ask in our Discord.
       </p>
     </div>
   )

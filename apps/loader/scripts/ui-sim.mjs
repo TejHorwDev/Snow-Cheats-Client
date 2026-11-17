@@ -632,10 +632,19 @@ check(
 console.log('\nThe landing page')
 const landing = code(readFileSync(join(renderer, 'screens/Landing.tsx'), 'utf8'))
 check('has no social row', !/FOLLOW US|Follow us|instagram-icon|SocialMark/i.test(landing))
-check('reaches the website through one button', /Website/.test(landing))
+/*
+ * The one link is the owner's Discord invite now, and it arrives from the panel.
+ * Compiled in, the address could only change with an installer; published, it can be
+ * corrected the same evening. A missing invite hides the button rather than pointing
+ * at nothing, which is why both branches are asserted.
+ */
+check('the second button is Discord, from the panel', /Discord/.test(landing) && /onExternal\(discord\)/.test(landing))
+check('and it is hidden when no invite is published', /discord \?/.test(landing))
+check('no compiled-in website address left on the landing page', !/https:\/\/snow-cheats\.com/.test(landing))
 
-const anywhere = walk(renderer).filter((file) => /instagram|tiktok|discord/i.test(code(readFileSync(file, 'utf8'))))
-check('the app mentions no social channel', anywhere.length === 0, anywhere.map((f) => relative(root, f)).join(', '))
+/* Social channels stay out of the app: one invite replaces the whole row. */
+const anywhere = walk(renderer).filter((file) => /instagram|tiktok|youtube/i.test(code(readFileSync(file, 'utf8'))))
+check('no other social channel is mentioned', anywhere.length === 0, anywhere.map((f) => relative(root, f)).join(', '))
 
 console.log('\nThe splash')
 const app = code(readFileSync(join(renderer, 'App.tsx'), 'utf8'))
