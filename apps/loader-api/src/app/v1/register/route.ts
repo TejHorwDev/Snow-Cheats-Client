@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { appIdAccepted, clearAttempts, clientAddress, hashPassword, normaliseUsername, tooManyAttempts } from '@/lib/accounts'
 import { codeDigest, redeemLicence } from '@/lib/licenses'
+import { upstreamCall, upstreamEnabled, unreachable } from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,17 @@ function detail(message: string, status: number): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (upstreamEnabled()) {
+    const forwarded = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    if (!forwarded) return detail('Send username, password and a licence key.', 400)
+    const answer = await upstreamCall('/v1/register', { method: 'POST', body: forwarded })
+    if (!answer) return unreachable()
+    return Response.json(answer.body ?? {}, {
+      status: answer.status,
+      headers: { 'cache-control': 'no-store' }
+    })
+  }
+
   if (!databaseReady()) return detail('The sign-in service is not configured yet.', 503)
 
   let payload: Record<string, unknown>

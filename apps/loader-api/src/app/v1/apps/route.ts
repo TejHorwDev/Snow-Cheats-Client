@@ -1,5 +1,6 @@
 import { sessionFor } from '@/lib/accounts'
 import { grantLive } from '@/lib/licenses'
+import { tokenOf, upstreamCall, upstreamEnabled, unreachable } from '@/lib/upstream'
 import { db } from '@/lib/db'
 import { databaseReady } from '@/lib/env'
 
@@ -24,6 +25,23 @@ export const dynamic = 'force-dynamic'
  * ask" must not look the same to a paying customer.
  */
 export async function GET(request: Request): Promise<Response> {
+  /*
+   * The same delegation as sign-in: what this account owns is decided upstream, and
+   * its answer travels back untouched. The loader parses that answer structurally —
+   * ids, names, wrappers — so an unfamiliar shape is still read correctly.
+   */
+  if (upstreamEnabled()) {
+    const token = tokenOf(request)
+    if (!token) return Response.json({ detail: 'Not signed in.' }, { status: 401 })
+
+    const answer = await upstreamCall('/v1/apps', { method: 'GET', token })
+    if (!answer) return unreachable()
+    return Response.json(answer.body ?? {}, {
+      status: answer.status,
+      headers: { 'cache-control': 'no-store' }
+    })
+  }
+
   if (!databaseReady()) {
     return Response.json({ detail: 'The sign-in service is not configured yet.' }, { status: 503 })
   }

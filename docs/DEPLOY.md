@@ -305,6 +305,60 @@ plus a new installer, and has not been done.
 
 ---
 
+## 4c. Signing in against your own auth service
+
+The loader can take its credentials from an external licensing service instead of
+this deployment's own tables — the setup where users are created in that service and
+just type the same username and password into the loader.
+
+**Switch it on:** Render → your service → **Environment** →
+
+```
+AUTH_UPSTREAM=https://indra-auth.onrender.com
+```
+
+Save. Render restarts, nothing else changes, and **no new installer is needed** —
+the loader still talks to `snow-loader-api.onrender.com`, which now forwards.
+
+### What is forwarded
+
+| Loader calls | This deployment does | The upstream does |
+| --- | --- | --- |
+| `POST /v1/login` | passes the credentials on | checks them, applies device limits, returns its token |
+| `GET /v1/apps` | passes the caller's `Bearer` token on | answers with that account's products |
+| `POST /v1/check` | forwards | decides |
+| `POST /v1/register` | forwards | redeems the key |
+| `POST /v1/logout` | forwards, then answers `{"ok":true}` | ends the session |
+
+Nothing is cached and no copy of the upstream's sessions is written here: two
+tables that both claim to know who is signed in is how a customer ends up unable to
+sign in. The token the loader holds **is** the upstream's token.
+
+An unreachable upstream answers `503` with *"The sign-in service is having trouble.
+Try again in a moment."* — never "wrong password", which would send people to reset
+credentials that were fine.
+
+### What changes when it is on
+
+- **Accounts are created upstream, not in this panel.** `/admin/accounts`,
+  `/admin/licenses` and the licence keys stop being the authority: the panel still
+  owns the catalogue (cards, files, download links), the upstream owns access.
+- **The ids must agree.** The loader unlocks a card when the id from `/v1/apps`
+  matches the card's **SNOW Auth app id** in the panel. So each product in the
+  upstream service must carry the same id as the catalogue row it should unlock
+  (or the panel's field must be set to that product's id upstream).
+- Delete `AUTH_UPSTREAM` to go back to the panel's own accounts. Nothing else has
+  to change, and the two systems do not collide: one is used at a time.
+
+### Before you rely on it
+
+That host is a **Render service somebody else deployed**. If you do not control its
+Render account, you have moved the thing your customers cannot do without — signing
+in — onto a server and an account you do not own. Own it, or host your own copy,
+before you sell anything against it.
+
+---
+
 ## 5. Fill it in from the panel
 
 1. **Settings** → website link, download link (the release URL above), hero film.

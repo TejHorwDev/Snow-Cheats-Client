@@ -480,6 +480,36 @@ async function main() {
   check('a key is checked before an account exists', registerRoute.indexOf("from('auth_licenses')") < registerRoute.indexOf("from('auth_users')\n      .insert"))
   check('and a lost race removes the half-made account', /delete\(\)\.eq\('id', userId\)/.test(registerRoute))
 
+  /*
+   * Delegation to an external auth service.
+   *
+   * The point of it: somebody else's accounts must work in the loader. The point of
+   * checking it here: it must never quietly become a second, cached copy of somebody
+   * else's sessions, and it must never swallow a failure into "wrong password".
+   */
+  console.log('\nSign-in can be delegated without a second truth')
+  const upstreamLib = readFileSync(join(root, 'src/lib/upstream.ts'), 'utf8')
+  check('the upstream is configured by name, not baked in', /process\.env\['AUTH_UPSTREAM'\]/.test(upstreamLib))
+  check('only http(s) base URLs are accepted', /\^https\?:/.test(upstreamLib) && upstreamLib.includes('.test(trimmed)'))
+  check('a dead upstream reads as trouble, never as a wrong password', /status: 503/.test(upstreamLib) && /having trouble/.test(upstreamLib))
+
+  for (const [file, call] of [
+    ['src/app/v1/login/route.ts', '/v1/login'],
+    ['src/app/v1/apps/route.ts', '/v1/apps'],
+    ['src/app/v1/logout/route.ts', '/v1/logout'],
+    ['src/app/v1/check/route.ts', '/v1/check'],
+    ['src/app/v1/register/route.ts', '/v1/register']
+  ]) {
+    const source = readFileSync(join(root, file), 'utf8')
+    check(`${file.split('/').slice(-2, -1)[0]} delegates before touching the database`,
+      /upstreamEnabled\(\)/.test(source) && source.indexOf('upstreamEnabled()') < source.indexOf('db()'),
+      file)
+    check(`and forwards to ${call}`, source.includes(`'${call}'`))
+  }
+  const appsSource = readFileSync(join(root, 'src/app/v1/apps/route.ts'), 'utf8')
+  check('the caller’s own token travels to the upstream', /tokenOf\(request\)/.test(appsSource))
+  check('no upstream token is written down', !/auth_sessions/.test(appsSource.split('if (upstreamEnabled())')[1]?.split('if (!databaseReady()')[0] ?? 'auth_sessions'))
+
   console.log('\nThe public surface is read-only')
   const publicRoutes = walk(join(root, 'src/app/api/loader')).filter((file) => file.endsWith('route.ts'))
   const writable = publicRoutes.filter((file) => /export async function (POST|PUT|PATCH|DELETE)/.test(readFileSync(file, 'utf8')))

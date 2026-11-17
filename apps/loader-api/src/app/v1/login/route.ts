@@ -10,6 +10,7 @@ import {
   verifyPassword
 } from '@/lib/accounts'
 import { bindDevice } from '@/lib/licenses'
+import { unreachable, upstreamCall, upstreamEnabled } from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -46,6 +47,30 @@ function detail(message: string, status: number): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  /*
+   * Delegated sign-in.
+   *
+   * When AUTH_UPSTREAM names a licensing service, the credentials the person typed
+   * are checked there — that service's accounts, that service's device limits,
+   * that service's product assignments — and its answer is returned unchanged. The
+   * loader cannot tell the difference: it asked for a token and it gets one.
+   *
+   * Nothing is recorded here, deliberately. A copy of somebody else's session table
+   * would be a second truth, and the first time the two disagreed it would be a
+   * customer who could not sign in.
+   */
+  if (upstreamEnabled()) {
+    const forwarded = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    if (!forwarded) return detail('Enter username & password', 400)
+
+    const answer = await upstreamCall('/v1/login', { method: 'POST', body: forwarded })
+    if (!answer) return unreachable()
+    return Response.json(answer.body ?? { detail: 'The sign-in service said nothing.' }, {
+      status: answer.status,
+      headers: { 'cache-control': 'no-store' }
+    })
+  }
+
   if (!databaseReady()) {
     return detail('The sign-in service is not configured yet.', 503)
   }
