@@ -62,6 +62,25 @@ export function upstreamAppId(incoming: unknown): unknown {
   return mapped || incoming
 }
 
+/**
+ * Did the upstream refuse because of the application, not the person?
+ *
+ * "Application not available" is not "wrong password", and the difference decides
+ * everything: the first is a configuration mistake of ours, the second is a typo.
+ * Treating them the same is how somebody is told their password is wrong while the
+ * password is right and the app id is old.
+ */
+export function appProblem(answer: UpstreamAnswer | null): boolean {
+  if (!answer || answer.status < 400) return false
+
+  const text = JSON.stringify(answer.body ?? '').toLowerCase()
+  if (!text) return false
+
+  const mentionsApp = /application|app_id|\bapp\b|product/.test(text)
+  const mentionsRejection = /not available|not found|unknown|invalid|does not exist|disabled/.test(text)
+  return mentionsApp && mentionsRejection
+}
+
 export interface UpstreamAnswer {
   status: number
   body: unknown

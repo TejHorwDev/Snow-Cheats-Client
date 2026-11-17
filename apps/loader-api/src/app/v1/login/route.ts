@@ -10,10 +10,39 @@ import {
   verifyPassword
 } from '@/lib/accounts'
 import { bindDevice } from '@/lib/licenses'
-import { unreachable, upstreamAppId, upstreamCall, upstreamEnabled } from '@/lib/upstream'
+import { appProblem, unreachable, upstreamAppId, upstreamCall, upstreamEnabled } from '@/lib/upstream'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * The app ids this deployment publishes, for a sign-in that was refused because the
+ * panel did not recognise the one the build carries.
+ *
+ * The catalogue is the only place these are written down: every product row's
+ * "SNOW Auth app id" was copied out of that panel by the owner. Anything blank is
+ * skipped, duplicates are collapsed, and the list stops at three — this is a
+ * recovery, not a search.
+ */
+async function appIdCandidates(): Promise<string[]> {
+  if (!databaseReady()) return []
+
+  try {
+    const { data } = await db()
+      .from('loader_apps')
+      .select('keyauth_app_id')
+      .not('keyauth_app_id', 'is', null)
+      .limit(25)
+
+    const ids = (data ?? [])
+      .map((row) => String((row as { keyauth_app_id?: string }).keyauth_app_id ?? '').trim())
+      .filter(Boolean)
+
+    return [...new Set(ids)].slice(0, 3)
+  } catch {
+    return []
+  }
+}
 
 /*
  * POST /v1/login
@@ -70,27 +99,46 @@ export async function POST(request: Request): Promise<Response> {
     if (!answer) return unreachable()
 
     /*
-     * The app id is compiled into the installer, so if the upstream's application
-     * carries a different one, a perfectly good password comes back rejected — a
-     * message about the password, caused by an id.
+     * The app id is compiled into the installer, so it belongs to whoever built that
+     * installer — and a deployment whose panel knows different applications answers
+     * "Application not available" for a password that is perfectly correct.
      *
-     * One retry, with the id left out, separates the two: if the account is real and
-     * only the id is wrong, the upstream signs them in, and what they may open is
-     * still decided by /v1/apps, which lists their assignments. If the password was
-     * wrong, the retry fails the same way and costs nothing.
+     * So: when the refusal is about the application and not the person, try the ids
+     * this deployment actually publishes — the catalogue's own app ids, which the
+     * owner copied out of that panel — and finally no id at all. The first sign-in
+     * that succeeds wins, and what the account may open is still decided by
+     * /v1/apps, never by this guess.
      *
-     * Not a loop, not a list of guesses: a single second attempt, and only after the
-     * upstream has already said no.
+     * Bounded on purpose: at most three candidates, and only after the panel has
+     * named the application as the problem. A wrong password is never retried, so a
+     * typo costs one attempt, not a ladder.
      */
-    if (answer.status >= 400 && answer.status < 500 && answer.status !== 429) {
+    if (appProblem(answer)) {
+      for (const candidate of await appIdCandidates()) {
+        const attempt = await upstreamCall('/v1/login', {
+          method: 'POST',
+          body: { ...forwarded, app_id: candidate }
+        })
+        if (attempt && attempt.status < 300) {
+          console.error('[v1/login] signed in with app id', candidate, '— set AUTH_UPSTREAM_APP_ID to this to skip the search')
+          return Response.json(attempt.body ?? {}, {
+            status: attempt.status,
+            headers: { 'cache-control': 'no-store' }
+          })
+        }
+      }
+
       const withoutId = { ...forwarded }
       delete withoutId['app_id']
       const retry = await upstreamCall('/v1/login', { method: 'POST', body: withoutId })
-      if (retry && retry.status < 300) return Response.json(retry.body ?? {}, {
-        status: retry.status,
-        headers: { 'cache-control': 'no-store' }
-      })
+      if (retry && retry.status < 300) {
+        return Response.json(retry.body ?? {}, {
+          status: retry.status,
+          headers: { 'cache-control': 'no-store' }
+        })
+      }
     }
+
     return Response.json(answer.body ?? { detail: 'The sign-in service said nothing.' }, {
       status: answer.status,
       headers: { 'cache-control': 'no-store' }
