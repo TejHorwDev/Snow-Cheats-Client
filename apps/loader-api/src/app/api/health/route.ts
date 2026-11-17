@@ -47,6 +47,8 @@ interface Report {
     app_id: string
     /** The id actually sent upstream when it differs from the build's. */
     upstream_app_id: string | null
+    /** The ids this catalogue publishes, which the sign-in recovery will try. */
+    catalogue_app_ids: string[]
     /** The last five sign-in attempts as the panel answered them. */
     last_login_attempts: { app_id: string; status: number; detail: string; at: string }[]
   }
@@ -61,6 +63,23 @@ interface Report {
  * is why this belongs in the health report and not in the sign-in screen: from here
  * it is answerable in one reload, with no log.
  */
+/*
+ * The ids the catalogue publishes, so a mismatch between a card and the panel can be
+ * seen from a browser instead of found by trying passwords.
+ */
+async function catalogueAppIds(): Promise<string[]> {
+  if (!databaseReady()) return []
+  try {
+    const { data } = await db().from('loader_apps').select('keyauth_app_id').limit(25)
+    const ids = (data ?? [])
+      .map((row) => String((row as { keyauth_app_id?: string }).keyauth_app_id ?? '').trim())
+      .filter(Boolean)
+    return [...new Set(ids)].slice(0, 5)
+  } catch {
+    return []
+  }
+}
+
 async function probeUpstream(): Promise<boolean | null> {
   const base = upstreamBase()
   if (!base) return null
@@ -104,7 +123,8 @@ async function report(): Promise<Report> {
       upstream_reachable: await probeUpstream(),
       app_id: (process.env['AUTH_APP_ID'] ?? '').trim(),
       upstream_app_id: (process.env['AUTH_UPSTREAM_APP_ID'] ?? '').trim() || null,
-      last_login_attempts: loginAttempts()
+      last_login_attempts: loginAttempts(),
+      catalogue_app_ids: await catalogueAppIds()
     },
     time: new Date().toISOString()
   }
