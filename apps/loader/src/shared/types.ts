@@ -118,6 +118,14 @@ export interface LaunchResult {
 export interface LoaderConfig {
   website: string
   /**
+   * The invite behind the Discord button, published by the panel.
+   *
+   * Empty hides the button. It is a setting rather than a constant because an invite
+   * can expire, be replaced, or need pulling at midnight — and none of that should
+   * cost an installer.
+   */
+  discord: string
+  /**
    * The sign-in backdrop. An absolute URL, or empty for the animated wash.
    *
    * Set from the admin panel, so the film can change without a release.

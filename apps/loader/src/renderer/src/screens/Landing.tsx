@@ -16,10 +16,14 @@ import WindowControls from '../components/WindowControls'
  *
  * No social row. It was four icons and a "follow us" caption, and it read as filler:
  * a landing page for an app you have already installed does not need to send you to
- * Instagram. The website is one button, and it is the only link.
+ * Instagram.
+ *
+ * The second button is the Discord invite, published by the panel. It was a website
+ * link compiled into the build, which meant the address could only change with an
+ * installer — for a link that is edited far more often than the app is. When no
+ * invite is published the button is not drawn: a button that opens nothing is worse
+ * than the space it would have taken.
  */
-
-const WEBSITE = 'https://snow-cheats.com'
 
 /** The composition, in the window's own coordinates. */
 const TITLE_TOP = 186
@@ -30,9 +34,11 @@ interface Props {
   onStart: () => void
   /** Leaving the app is confirmed, never a surprise click. */
   onExternal: (url: string) => void
+  /** The invite from the panel. Empty means no second button. */
+  discord: string
 }
 
-export default function Landing({ onStart, onExternal }: Props): React.JSX.Element {
+export default function Landing({ onStart, onExternal, discord }: Props): React.JSX.Element {
   return (
     <div className="absolute inset-0">
       <WindowControls />
@@ -70,17 +76,27 @@ export default function Landing({ onStart, onExternal }: Props): React.JSX.Eleme
         SNOW CHEATS
       </h1>
 
-      <div className="absolute flex items-start gap-[13px]" style={{ top: BUTTONS_TOP, left: 283 }}>
+      {/*
+        * The pair is centred with and without the second button: 174 + 13 + 147 = 334,
+        * and the left edge moves by (147 + 13) / 2 when it is missing, so the row stays
+        * on the same axis instead of drifting right when an invite is unpublished.
+        */}
+      <div
+        className="absolute flex items-start gap-[13px]"
+        style={{ top: BUTTONS_TOP, left: discord ? 283 : 283 + (147 + 13) / 2 }}
+      >
         <SlideButton label="Get Started" width={174} height={40} onConfirm={onStart} />
 
-        <button
-          type="button"
-          onClick={() => onExternal(WEBSITE)}
-          className="grid h-10 place-items-center border border-[var(--hairline)] bg-[var(--color-raised)] text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-2)] transition-colors duration-150 hover:border-[var(--hairline-strong)] hover:text-[var(--color-ink)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-          style={{ width: 147, borderRadius: 10 }}
-        >
-          Website
-        </button>
+        {discord ? (
+          <button
+            type="button"
+            onClick={() => onExternal(discord)}
+            className="grid h-10 place-items-center border border-[var(--hairline)] bg-[var(--color-raised)] text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-2)] transition-colors duration-150 hover:border-[var(--hairline-strong)] hover:text-[var(--color-ink)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            style={{ width: 147, borderRadius: 10 }}
+          >
+            Discord
+          </button>
+        ) : null}
       </div>
 
       {/* Everything below the buttons is the film, deliberately. */}

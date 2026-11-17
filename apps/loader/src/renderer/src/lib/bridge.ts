@@ -91,6 +91,7 @@ const staged: Catalogue = {
   ],
   config: {
     website: 'https://snow-cheats.com',
+    discord: 'https://discord.gg/snowcheats',
     video: '',
     notice: '',
     maintenance: false,

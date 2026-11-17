@@ -32,6 +32,7 @@ export function apiBase(): string {
 
 const EMPTY_CONFIG: LoaderConfig = {
   website: '',
+  discord: '',
   video: '',
   notice: '',
   maintenance: false,
@@ -40,7 +41,7 @@ const EMPTY_CONFIG: LoaderConfig = {
 }
 
 /** The text-valued settings. `maintenance` is parsed separately — it is a flag. */
-const FIELDS: Array<'website' | 'video' | 'notice'> = ['website', 'video', 'notice']
+const FIELDS: Array<'website' | 'discord' | 'video' | 'notice'> = ['website', 'discord', 'video', 'notice']
 
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return 0

@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react'
 export default function LinkConfig(): React.JSX.Element {
   const [website, setWebsite] = useState('')
   const [download, setDownload] = useState('')
+  const [discord, setDiscord] = useState('')
   const [loaded, setLoaded] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -26,9 +27,12 @@ export default function LinkConfig(): React.JSX.Element {
     void (async () => {
       try {
         const response = await fetch('/api/admin/config', { cache: 'no-store' })
-        const payload = (await response.json()) as { config?: { website?: string; download?: string } }
+        const payload = (await response.json()) as {
+          config?: { website?: string; download?: string; discord?: string }
+        }
         setWebsite(payload.config?.website ?? '')
         setDownload(payload.config?.download ?? '')
+        setDiscord(payload.config?.discord ?? '')
       } finally {
         setLoaded(true)
       }
@@ -44,7 +48,7 @@ export default function LinkConfig(): React.JSX.Element {
       const response = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ website, download })
+        body: JSON.stringify({ website, download, discord })
       })
       if (!response.ok) {
         setStatus('Could not save.')
@@ -76,6 +80,23 @@ export default function LinkConfig(): React.JSX.Element {
           onChange={(event) => setWebsite(event.target.value)}
         />
         <span className="hint">The landing page&apos;s Website button. Empty hides it.</span>
+      </div>
+
+      <div className="field">
+        <label className="label" htmlFor="discord">
+          Discord invite
+        </label>
+        <input
+          id="discord"
+          type="url"
+          value={discord}
+          placeholder="https://discord.gg/snowcheats"
+          onChange={(event) => setDiscord(event.target.value)}
+        />
+        <span className="hint">
+          What the loader&apos;s Discord button opens, on the landing page and in the app. Empty hides the
+          button — nothing here ever points at a dead invite.
+        </span>
       </div>
 
       <div className="field">

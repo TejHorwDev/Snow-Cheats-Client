@@ -40,6 +40,13 @@ export async function GET(): Promise<Response> {
     return Response.json(
       {
         website: config.website ?? '',
+        /*
+         * Where the loader's Discord button goes. Published here rather than compiled
+         * in, so the invite can change — or be pulled — without shipping an installer.
+         * Empty means the app shows no button at all: a button that opens nothing is
+         * worse than the space it takes.
+         */
+        discord: safeLink(config.discord),
         video: config.video ?? '',
         notice: config.notice ?? '',
         maintenance: config.maintenance === '1' || config.maintenance === 'true' ? '1' : '0',

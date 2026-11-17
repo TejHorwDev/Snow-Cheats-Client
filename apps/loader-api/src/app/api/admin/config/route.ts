@@ -19,7 +19,9 @@ const KNOWN = [
   'film_blur',
   'film_dim',
   /* Where the Download button points. Empty streams the newest GitHub release. */
-  'download'
+  'download',
+  /* The invite the loader's Discord button opens. Empty hides the button. */
+  'discord'
 ] as const
 
 export async function GET(): Promise<Response> {
@@ -39,7 +41,7 @@ export async function PUT(request: Request): Promise<Response> {
 
   const values: Record<string, string> = {}
   /* The three keys that end up in an href or a video src. None of them may be `javascript:`. */
-  const LINKS = new Set(['website', 'video', 'download'])
+  const LINKS = new Set(['website', 'video', 'download', 'discord'])
 
   for (const key of KNOWN) {
     const raw = payload[key]
@@ -47,7 +49,8 @@ export async function PUT(request: Request): Promise<Response> {
       const trimmed = raw.trim()
       if (LINKS.has(key)) {
         if (trimmed && !safeLink(trimmed)) {
-          return fail(`That ${key === 'video' ? 'film' : key === 'download' ? 'download' : 'website'} link is not http(s).`)
+          const label = key === 'video' ? 'film' : key === 'discord' ? 'Discord invite' : key === 'download' ? 'download' : 'website'
+          return fail(`That ${label} link is not http(s).`)
         }
         values[key] = trimmed ? safeLink(trimmed) : ''
         continue
