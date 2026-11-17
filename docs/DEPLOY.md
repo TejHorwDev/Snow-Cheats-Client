@@ -338,6 +338,22 @@ An unreachable upstream answers `503` with *"The sign-in service is having troub
 Try again in a moment."* — never "wrong password", which would send people to reset
 credentials that were fine.
 
+### The app id, and why "Application not available" happens
+
+The build carries its own app id (1.0.2 sends `7cceaf553a603ceb8d54a6c2`, the one the
+reference loader used). A panel that has never heard of that id refuses the sign-in
+with *"Application not available"* — a message about the application that arrives
+where people expect a message about their password.
+
+`AUTH_UPSTREAM_APP_ID` fixes it properly: set it to the id of your loader's own
+application in that panel. Without it the deployment recovers on its own — when the
+refusal mentions the application, it retries with the app ids from this catalogue
+(at most three, usually one) and then once with no id at all. A refusal that mentions
+the password is never retried, so a typo costs one attempt.
+
+What the account may open is never decided by that recovery: it comes from
+`/v1/apps`.
+
 ### What changes when it is on
 
 - **Accounts are created upstream, not in this panel.** `/admin/accounts`,
