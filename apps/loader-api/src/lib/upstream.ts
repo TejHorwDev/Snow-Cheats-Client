@@ -120,6 +120,44 @@ export function loginAttempts(): LoginAttempt[] {
   return lastAttempts
 }
 
+/**
+ * Did the panel refuse the machine rather than the person or the application?
+ *
+ * "Device limit reached" is the only answer that tells the customer exactly what to
+ * do — remove a device, or buy more slots — and it is the one answer this code used to
+ * walk straight past, because it arrived on the second id tried and the first one's
+ * sentence was the one returned. A password that is right, reported as an application
+ * that is missing, is the worst message in the whole flow.
+ */
+export function deviceProblem(answer: UpstreamAnswer | null): boolean {
+  if (!answer || answer.status < 400) return false
+  const text = JSON.stringify(answer.body ?? '').toLowerCase()
+  return /device/.test(text) && /limit|max|already|slot|bound|reached/.test(text)
+}
+
+/*
+ * Which app id signed a username in last time.
+ *
+ * The build carries one id and the panel has several applications, so a sign-in may
+ * have to try a few before one lands. Remembering the one that worked turns the next
+ * launch into a single request — and keeps a customer's password from being walked
+ * past four applications every time they open the app.
+ *
+ * Bounded, in memory, and never written down: an optimisation, not a record.
+ */
+const knownAppIds = new Map<string, string>()
+
+export function recallAppId(username: string): string | null {
+  return knownAppIds.get(username.trim().toLowerCase()) ?? null
+}
+
+export function rememberAppId(username: string, appId: string): void {
+  const key = username.trim().toLowerCase()
+  if (!key || !appId) return
+  if (knownAppIds.size > 500) knownAppIds.clear()
+  knownAppIds.set(key, appId)
+}
+
 export interface UpstreamAnswer {
   status: number
   body: unknown
