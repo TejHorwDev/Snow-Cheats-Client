@@ -31,6 +31,23 @@ export function upstreamEnabled(): boolean {
   return upstreamBase() !== null
 }
 
+/**
+ * The app id to send upstream, when it is not the one the build carries.
+ *
+ * The loader's app id is compiled into the installer (1.0.2 sends
+ * `7cceaf553a603ceb8d54a6c2`), so it cannot be changed by a setting. If the
+ * upstream's product carries a different id, every sign-in fails with "wrong
+ * username or password" — a message about the password, caused by the id.
+ *
+ * `AUTH_UPSTREAM_APP_ID` maps the two: the build keeps sending its own, this
+ * deployment rewrites it before forwarding. Without it the value passes through
+ * untouched.
+ */
+export function upstreamAppId(incoming: unknown): unknown {
+  const mapped = (process.env['AUTH_UPSTREAM_APP_ID'] ?? '').trim()
+  return mapped || incoming
+}
+
 export interface UpstreamAnswer {
   status: number
   body: unknown
