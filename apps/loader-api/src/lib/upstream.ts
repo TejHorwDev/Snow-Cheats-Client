@@ -19,10 +19,24 @@
 
 const TIMEOUT_MS = 18_000
 
+/*
+ * The service that checks passwords when nothing else says otherwise.
+ *
+ * The owner's instruction was exact: accounts are created in their own
+ * authentication panel, and only those accounts sign in to the loader. A default
+ * that quietly falls back to this deployment's own table is how you end up with two
+ * kinds of account, a customer typing the right password into the wrong system, and
+ * a screen that says "wrong username or password" for a user that exists.
+ *
+ * So the default is their service. `AUTH_UPSTREAM` overrides it, and the literal
+ * value `local` — the only way back — keeps the accounts in this deployment.
+ */
+const DEFAULT_UPSTREAM = 'https://indra-auth.onrender.com'
+
 /** The configured upstream, normalised, or null when sign-in is local. */
 export function upstreamBase(): string | null {
-  const raw = (process.env['AUTH_UPSTREAM'] ?? '').trim()
-  if (!raw) return null
+  const raw = (process.env['AUTH_UPSTREAM'] ?? DEFAULT_UPSTREAM).trim()
+  if (!raw || raw.toLowerCase() === 'local' || raw.toLowerCase() === 'off') return null
   const trimmed = raw.replace(/\/+$/, '')
   return /^https?:\/\/[^\s]+$/i.test(trimmed) ? trimmed : null
 }

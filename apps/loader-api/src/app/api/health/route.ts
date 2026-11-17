@@ -42,11 +42,37 @@ interface Report {
   auth: {
     mode: 'upstream' | 'local'
     upstream: string | null
+    /** Whether the upstream answered just now — a sleeping free host looks like a bad password. */
+    upstream_reachable: boolean | null
     app_id: string
     /** The id actually sent upstream when it differs from the build's. */
     upstream_app_id: string | null
   }
   time: string
+}
+
+/*
+ * Ask the upstream whether it is awake.
+ *
+ * A free host sleeps. The first sign-in after a quiet spell can take longer than a
+ * person waits, and the app has one sentence for everything that went wrong — which
+ * is why this belongs in the health report and not in the sign-in screen: from here
+ * it is answerable in one reload, with no log.
+ */
+async function probeUpstream(): Promise<boolean | null> {
+  const base = upstreamBase()
+  if (!base) return null
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 6000)
+  try {
+    const response = await fetch(`${base}/health`, { signal: controller.signal, cache: 'no-store' })
+    return response.ok
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function report(): Promise<Report> {
@@ -73,6 +99,7 @@ async function report(): Promise<Report> {
     auth: {
       mode: upstreamBase() ? 'upstream' : 'local',
       upstream: upstreamBase(),
+      upstream_reachable: await probeUpstream(),
       app_id: (process.env['AUTH_APP_ID'] ?? '').trim(),
       upstream_app_id: (process.env['AUTH_UPSTREAM_APP_ID'] ?? '').trim() || null
     },
