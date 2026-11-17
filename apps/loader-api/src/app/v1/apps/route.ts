@@ -1,4 +1,5 @@
 import { sessionFor } from '@/lib/accounts'
+import { grantLive } from '@/lib/licenses'
 import { db } from '@/lib/db'
 import { databaseReady } from '@/lib/env'
 
@@ -35,12 +36,19 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const { data: granted, error: grantedError } = await db()
       .from('auth_entitlements')
-      .select('product_id')
+      .select('product_id,expires_at')
       .eq('user_id', session.userId)
 
     if (grantedError) throw new Error(grantedError.message)
 
-    const productIds = (granted ?? []).map((row) => (row as { product_id: string }).product_id)
+    /*
+     * An expired licence is not an entitlement. The card has to close on its own
+     * when the days run out — nobody is going to remember to revoke it by hand on
+     * the right morning.
+     */
+    const productIds = ((granted ?? []) as Array<{ product_id: string; expires_at: string | null }>)
+      .filter((row) => grantLive(row.expires_at))
+      .map((row) => row.product_id)
 
     if (productIds.length === 0) {
       return Response.json(
