@@ -29,7 +29,9 @@ const tables = new Map(Object.entries({
   loader_config: [{ key: 'website', value: '' }],
   auth_users: [],
   auth_sessions: [],
-  auth_entitlements: []
+  auth_entitlements: [],
+  auth_licenses: [],
+  auth_devices: []
 }))
 
 /** PostgREST's embedded resources are resolved by foreign key; this is the one FK. */
@@ -285,10 +287,42 @@ const server = createServer(async (request, response) => {
       if (table === 'auth_users' && !row.created_at) row.created_at = new Date().toISOString()
       if (table === 'auth_sessions' && !row.created_at) row.created_at = new Date().toISOString()
       if (table === 'auth_entitlements' && !row.created_at) row.created_at = new Date().toISOString()
+      if (table === 'auth_licenses') {
+        if (!row.id) row.id = randomUUID()
+        if (!row.created_at) row.created_at = new Date().toISOString()
+        if (row.device_limit === undefined) row.device_limit = 1
+        if (!row.note) row.note = ''
+        if (rows.some((candidate) => candidate.code_hash === row.code_hash)) {
+          return json(response, 409, {
+            message: 'duplicate key value violates unique constraint "auth_licenses_code_hash_key"',
+            code: '23505'
+          })
+        }
+      }
+      if (table === 'auth_devices') {
+        if (!row.id) row.id = randomUUID()
+        if (!row.first_seen_at) row.first_seen_at = new Date().toISOString()
+        if (!row.last_seen_at) row.last_seen_at = row.first_seen_at
+        if (!row.device_name) row.device_name = ''
+        if (
+          rows.some(
+            (candidate) => candidate.user_id === row.user_id && candidate.device_id === row.device_id
+          )
+        ) {
+          return json(response, 409, {
+            message: 'duplicate key value violates unique constraint "auth_devices_user_id_device_id_key"',
+            code: '23505'
+          })
+        }
+      }
       if (table === 'loader_apps' && !row.created_at) row.created_at = new Date().toISOString()
 
-      const existing = upsert && conflict
-        ? rows.findIndex((candidate) => String(candidate[conflict]) === String(row[conflict]))
+      /* `on_conflict` may name several columns: `user_id,product_id`. */
+      const conflictColumns = conflict ? conflict.split(',').map((entry) => entry.trim()) : []
+      const existing = upsert && conflictColumns.length
+        ? rows.findIndex((candidate) =>
+            conflictColumns.every((column) => String(candidate[column]) === String(row[column]))
+          )
         : -1
 
       if (existing >= 0) {
