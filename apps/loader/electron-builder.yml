@@ -24,15 +24,29 @@ publish:
   releaseType: release
 
 win:
+  # A zip as well as an installer: if a machine refuses the NSIS wizard there is
+  # still a way to run the app (unzip, run "SNOW LOADER.exe").
+  artifactName: SNOW-LOADER-${version}-${arch}.${ext}
   target:
     - target: nsis
+      arch:
+        - x64
+    - target: zip
       arch:
         - x64
 
 nsis:
   oneClick: false
   # Per-user install: no UAC, and an update never needs administrator rights.
+  # build/installer.nsh forces current-user so the "all users / only for me"
+  # page is skipped rather than shown.
   perMachine: false
+  # One language, resolved at build time. A multi-language installer picks a
+  # language from the OS at runtime, and a locale it does not know renders every
+  # button and label as an empty string — a blank wizard.
+  multiLanguageInstaller: false
+  installerLanguages:
+    - en_US
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true

@@ -219,7 +219,8 @@ jobs:
           tag_name: loader-v${{ steps.version.outputs.value }}
           name: SNOW LOADER v${{ steps.version.outputs.value }}
           files: |
-            apps/loader/release/*.exe
+            apps/loader/release/SNOW-LOADER-Setup-*.exe
+            apps/loader/release/SNOW-LOADER-*-x64.zip
             apps/loader/release/SNOW-LOADER-Payload-*.asar
             apps/loader/release/payload.json
           generate_release_notes: true
@@ -232,7 +233,8 @@ jobs:
         with:
           name: snow-loader-windows
           path: |
-            apps/loader/release/*.exe
+            apps/loader/release/SNOW-LOADER-Setup-*.exe
+            apps/loader/release/SNOW-LOADER-*-x64.zip
             apps/loader/release/SNOW-LOADER-Payload-*.asar
             apps/loader/release/payload.json
           if-no-files-found: error
