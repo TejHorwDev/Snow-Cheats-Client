@@ -9,6 +9,7 @@ import {
   tooManyAttempts,
   verifyPassword
 } from '@/lib/accounts'
+import { bindDevice } from '@/lib/licenses'
 import { databaseReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -98,6 +99,20 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!user || !matches) return detail('Wrong username or password.', 401)
     if (user.banned) return detail('This account has been suspended.', 403)
+
+    /*
+     * The device the loader already sends. Before this existed the value arrived
+     * and was ignored, which made a licence's device limit unenforceable: the same
+     * key worked on a hundred machines and nobody could tell.
+     *
+     * A known device is stamped and let through; a new one has to fit in the
+     * licence's slots. The refusal happens before a token is issued, so a machine
+     * that is over the limit is never half-signed-in.
+     */
+    const binding = await bindDevice(user.id, deviceId, deviceName)
+    if (!binding.ok) {
+      return detail(binding.message ?? 'This account is already on too many devices.', 403)
+    }
 
     const { token, hash } = issueToken()
     const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString()

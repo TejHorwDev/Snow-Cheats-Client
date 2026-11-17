@@ -436,6 +436,50 @@ async function main() {
   check('the editor previews the real card with the real numbers', /card-shot-art/.test(products) && /filter: `blur\(\$\{localBlur\}px\)`/.test(products))
   check('and saves without a release', /artworkBlur: nextBlur/.test(products))
 
+  /*
+   * Licences and devices.
+   *
+   * The rules that decide whether a paying customer keeps access, and whether a key
+   * can be used twice. All of it is pure, so it is checked here rather than by
+   * minting a real key against the live database.
+   */
+  console.log('\nA licence decides who gets in')
+  const licences = await bundle('src/lib/licenses.ts', 'licenses')
+  const sample = licences.generateCode()
+  check('a key looks like SNOW-XXXX-XXXX-XXXX', /^SNOW(-[A-Z0-9]{4}){3}$/.test(sample), sample)
+  check('and avoids the characters people misread', !/[IO01]/.test(sample.replace(/SNOW/g, '')))
+  const batch = new Set(Array.from({ length: 500 }, () => licences.generateCode()))
+  check('500 keys in a row are all different', batch.size === 500, `${batch.size} unique`)
+
+  check('case and separators do not change a key', licences.normaliseCode('snow-7k2q-9xmp-4tbh') === 'SNOW7K2Q9XMP4TBH')
+  check('the digest is sha256 of the normalised key', licences.codeDigest('snow 7k2q 9xmp 4tbh') === createHash('sha256').update('SNOW7K2Q9XMP4TBH').digest('hex'))
+  check('the panel only ever sees the last four', licences.maskCode('SNOW-7K2Q-9XMP-4TBH') === 'SNOW-…-4TBH')
+
+  check('a known device is always let in', licences.deviceSlot(1, true, 5) === 'known')
+  check('a new device fits when there is room', licences.deviceSlot(2, false, 1) === 'free')
+  check('a new device is refused at the limit', licences.deviceSlot(2, false, 2) === 'full')
+  check('no licence means no device limit', licences.deviceSlot(null, false, 99) === 'free')
+
+  check('a lifetime grant never lapses', licences.grantLive(null) === true)
+  check('a future grant is live', licences.grantLive(new Date(Date.now() + 60_000).toISOString()) === true)
+  check('a lapsed grant is not', licences.grantLive(new Date(Date.now() - 60_000).toISOString()) === false)
+
+  console.log('\nLicences are enforced where they are read')
+  const loginRoute = readFileSync(join(root, 'src/app/v1/login/route.ts'), 'utf8')
+  check(
+    'sign-in binds the device before issuing a token',
+    /bindDevice\(user\.id/.test(loginRoute) &&
+      loginRoute.indexOf('await bindDevice(user.id') < loginRoute.indexOf('issueToken()')
+  )
+  check('and refuses with a sentence, not a status code', /binding\.ok\) \{\s*return detail\(/.test(loginRoute))
+  const appsRoute = readFileSync(join(root, 'src/app/v1/apps/route.ts'), 'utf8')
+  check('a lapsed licence stops counting as an entitlement', /grantLive\(row\.expires_at\)/.test(appsRoute))
+  const revokeRoute = readFileSync(join(root, 'src/lib/licenses.ts'), 'utf8')
+  check('revoking takes the grant with it', /delete\(\)\.eq\('license_id', id\)/.test(revokeRoute))
+  const registerRoute = readFileSync(join(root, 'src/app/v1/register/route.ts'), 'utf8')
+  check('a key is checked before an account exists', registerRoute.indexOf("from('auth_licenses')") < registerRoute.indexOf("from('auth_users')\n      .insert"))
+  check('and a lost race removes the half-made account', /delete\(\)\.eq\('id', userId\)/.test(registerRoute))
+
   console.log('\nThe public surface is read-only')
   const publicRoutes = walk(join(root, 'src/app/api/loader')).filter((file) => file.endsWith('route.ts'))
   const writable = publicRoutes.filter((file) => /export async function (POST|PUT|PATCH|DELETE)/.test(readFileSync(file, 'utf8')))

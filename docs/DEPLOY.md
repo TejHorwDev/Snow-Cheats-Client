@@ -257,6 +257,54 @@ verified, applied on the next start. Nobody reinstalls.
 
 ---
 
+## 4b. Licence keys and devices
+
+The loader signs in with a username and password. Behind that, in this deployment's
+own database, sit licence keys with an expiry and a device limit — the part the
+previous owner ran in a separate auth service.
+
+**Where it lives:** `/admin/licenses` on the panel. It is not in the nav (the menu
+matches the project this one derives from); bookmark it.
+
+### The flow
+
+1. **Mint** — pick a product, days (empty = lifetime), devices per key, how many.
+   The plaintext keys appear **once**, in the response. Copy them then; only a hash
+   and the last four characters are stored.
+2. **Sell** the key.
+3. **Redeem** — for the loader, in the panel: *Redeem a key for a customer*, type
+   the username and the key. The product lands on that account for the licence's
+   days. (Apps that call `/v1/register` themselves redeem it with the same key and
+   the same rule: a key works once, at one door.)
+4. **Devices** — every machine that signs in is recorded. A key with 2 devices
+   refuses the third with a sentence the customer can act on; the owner deletes the
+   dead machine in the panel and the next attempt gets in.
+
+### What is enforced where
+
+| Rule | Where |
+| --- | --- |
+| key exists, not revoked, not already used, not expired | `redeemLicence()` |
+| days → expiry on the grant | `redeemLicence()` |
+| lapsed grant stops opening the card | `/v1/apps` filters by `grantLive()` |
+| device limit | `/v1/login` binds the device before a token is issued |
+| revoking takes the product away | `revokeLicence()` deletes the grant |
+
+### What it is not
+
+No resellers, no sub-accounts, no white-label tenants. One owner mints every key.
+An earlier attempt at reseller tiers was reverted and is not coming back.
+
+### The gap, stated plainly
+
+The loader's sign-in screen has **no licence field** — it asks for a username and
+password and nothing else, exactly as the project this one derives from did.
+So keys are redeemed by the owner in the panel, or by an app that speaks
+`/v1/register`. Putting a key field on the loader's own sign-in is a loader change
+plus a new installer, and has not been done.
+
+---
+
 ## 5. Fill it in from the panel
 
 1. **Settings** → website link, download link (the release URL above), hero film.
