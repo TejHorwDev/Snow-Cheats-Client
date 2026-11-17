@@ -649,6 +649,15 @@ check('no other social channel is mentioned', anywhere.length === 0, anywhere.ma
 console.log('\nLaunching')
 const launchService = code(readFileSync(join(root, 'src/main/services/launch.ts'), 'utf8'))
 check('a program that dies instantly is reported, not called a success', /EARLY_EXIT_MS/.test(launchService) && /Windows closed it straight away/.test(launchService))
+/*
+ * The bug the owner reported: "it says launching but never launch". A cheat almost
+ * always asks for administrator rights, and Windows refuses that from an unelevated
+ * parent with an error — never an exit — so the toast was the only thing that happened.
+ */
+check('a spawn error is not mistaken for a launch', /child\.once\('error'/.test(launchService) && /Windows would not start it/.test(launchService))
+check('elevation is recognised by code and by name', /EACCES/.test(launchService) && /EPERM/.test(launchService) && /ELEVATION_REQUIRED/.test(launchService))
+check('and raised through the shell, not silently skipped', /-Verb RunAs/.test(launchService) && /Start-Process/.test(launchService))
+check('a cancelled prompt is reported as a cancellation', /Administrator permission was cancelled/.test(launchService))
 check('and it stops being marked as running when it does', /running\.delete\(id\)\s*\n?\s*console\.error\('\[launch\] exited immediately'/.test(launchService))
 const appSource = code(readFileSync(join(renderer, 'App.tsx'), 'utf8'))
 check('the library asks again on a timer — a closed program brings Launch back', /setInterval\(tick, 2_500\)/.test(appSource))
