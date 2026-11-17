@@ -47,7 +47,7 @@ check('"false" does not close it', toConfig({ maintenance: 'false' }).maintenanc
 check('the film survives with its query string', toConfig({ video: ' https://a/v.mp4?v=2 ' }).video === 'https://a/v.mp4?v=2')
 check('a blank film is not a film', toConfig({ video: '   ' }).video === '')
 check('the announcement is kept verbatim apart from edge space', toConfig({ notice: '  back at 02:00  ' }).notice === 'back at 02:00')
-check('the website link is trimmed', toConfig({ website: ' https://indra-cheats.com ' }).website === 'https://indra-cheats.com')
+check('the website link is trimmed', toConfig({ website: ' https://snow-cheats.com ' }).website === 'https://snow-cheats.com')
 check('a number where text belongs is ignored', toConfig({ video: 42, notice: null }).video === '' && toConfig({ video: 42 }).notice === '')
 check('unknown keys are dropped, not carried', !('sale' in toConfig({ sale: '1' })))
 

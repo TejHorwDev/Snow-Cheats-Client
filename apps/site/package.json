@@ -1,8 +1,8 @@
 {
-  "name": "indra-site",
+  "name": "snow-site",
   "version": "1.0.0",
   "private": true,
-  "description": "The public site: what INDRA publishes, and how to get the loader.",
+  "description": "The public site: what SNOW publishes, and how to get the loader.",
   "scripts": {
     "dev": "next dev -p 5290",
     "build": "next build",

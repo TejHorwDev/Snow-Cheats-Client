@@ -1,8 +1,8 @@
 {
-  "name": "indra-loader-api",
+  "name": "snow-loader-api",
   "version": "1.0.0",
   "private": true,
-  "description": "INDRA LOADER — catalogue API and the web admin panel",
+  "description": "SNOW LOADER — catalogue API and the web admin panel",
   "scripts": {
     "dev": "next dev -p 5280",
     "build": "next build",

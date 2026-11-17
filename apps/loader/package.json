@@ -1,9 +1,9 @@
 {
-  "name": "indra-loader",
-  "productName": "INDRA LOADER",
-  "version": "1.0.52",
+  "name": "snow-loader",
+  "productName": "SNOW LOADER",
+  "version": "1.0.0",
   "private": true,
-  "description": "INDRA LOADER \u2014 app launcher and catalogue",
+  "description": "SNOW LOADER \u2014 app launcher and catalogue",
   "author": "TejHorwDev",
   "main": "./out/main/bootstrap.js",
   "engines": {

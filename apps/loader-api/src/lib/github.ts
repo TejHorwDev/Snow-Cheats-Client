@@ -16,7 +16,7 @@ import { readConfig, writeConfig } from './db'
  * already depends on it for the catalogue — the update works.
  */
 
-const REPO = 'TejHorwDev/INDRA-HUB'
+const REPO = 'TejHorwDev/Snow-Cheats-Client'
 /** Both applications publish to one repository; this prefix is the loader's. */
 const PREFIX = 'loader-v'
 
@@ -87,7 +87,7 @@ async function json<T>(url: string, timeoutMs = 8_000): Promise<T> {
       signal: controller.signal,
       cache: 'no-store',
       redirect: 'follow',
-      headers: { accept: 'application/vnd.github+json', 'user-agent': 'indra-loader-api' }
+      headers: { accept: 'application/vnd.github+json', 'user-agent': 'snow-loader-api' }
     })
     if (!response.ok) throw new Error(`GitHub answered HTTP ${response.status}`)
     return (await response.json()) as T
@@ -131,7 +131,7 @@ async function newestFromFeed(): Promise<string | null> {
       signal: controller.signal,
       cache: 'no-store',
       redirect: 'follow',
-      headers: { accept: 'application/atom+xml', 'user-agent': 'indra-loader-api' }
+      headers: { accept: 'application/atom+xml', 'user-agent': 'snow-loader-api' }
     })
     if (!response.ok) throw new Error(`GitHub answered HTTP ${response.status}`)
 
@@ -172,11 +172,11 @@ async function newestFromSearch(): Promise<string | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 10_000)
   try {
-    const response = await fetch(`https://github.com/${REPO}/releases?q=INDRA+LOADER&expanded=true`, {
+    const response = await fetch(`https://github.com/${REPO}/releases?q=SNOW+LOADER&expanded=true`, {
       signal: controller.signal,
       cache: 'no-store',
       redirect: 'follow',
-      headers: { accept: 'text/html', 'user-agent': 'indra-loader-api' }
+      headers: { accept: 'text/html', 'user-agent': 'snow-loader-api' }
     })
     if (!response.ok) throw new Error(`GitHub answered HTTP ${response.status}`)
 

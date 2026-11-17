@@ -12,13 +12,13 @@ import { adminReady, env } from './env'
  * something.
  */
 
-const COOKIE = 'indra_admin'
-const ISSUER = 'indra-loader-api'
-const AUDIENCE = 'indra-loader-admin'
+const COOKIE = 'snow_admin'
+const ISSUER = 'snow-loader-api'
+const AUDIENCE = 'snow-loader-admin'
 const SESSION_HOURS = 12
 
 /** A fixed salt is fine here: the password is compared, never stored. */
-const SALT = 'indra-loader-admin-v1'
+const SALT = 'snow-loader-admin-v1'
 
 function digest(password: string): Buffer {
   return scryptSync(password, SALT, 64)

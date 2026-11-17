@@ -7,7 +7,7 @@ import { deviceId } from '../lib/device'
 /*
  * The auth client.
  *
- * Talks to INDRA Auth's client API (`/v1/*`) from the main process only. Two
+ * Talks to SNOW Auth's client API (`/v1/*`) from the main process only. Two
  * consequences, both deliberate:
  *
  *  - The token never enters the renderer and is never written down. It lives in
@@ -25,13 +25,31 @@ import { deviceId } from '../lib/device'
  * server's own `detail` when it bothered to send one.
  */
 
-const AUTH_BASE = (process.env['INDRA_LOADER_AUTH_BASE'] ?? 'https://indra-auth.onrender.com').replace(
-  /\/+$/,
-  ''
-)
+declare const __LOADER_API__: string
 
-/** INDRA LOADER's own product id in INDRA Auth. */
-const APP_ID = process.env['INDRA_LOADER_APP_ID'] ?? 'f2bfc9baa7c99b90c0d6974b'
+/*
+ * Where the sign-in service lives.
+ *
+ * It is served by this deployment's own API — one service, one URL, one thing to
+ * configure — so the address compiled into the build for the catalogue is the same
+ * address the sign-in uses. `SNOW_AUTH_BASE` exists for the case where somebody
+ * deliberately splits them, and the old variable name is still read so an existing
+ * pipeline keeps working.
+ */
+const AUTH_BASE = (
+  process.env['SNOW_AUTH_BASE'] ??
+  process.env['INDRA_LOADER_AUTH_BASE'] ??
+  (typeof __LOADER_API__ === 'string' ? __LOADER_API__ : '')
+).replace(/\/+$/, '')
+
+/**
+ * SNOW LOADER's own product id in the sign-in service.
+ *
+ * The service refuses a build that presents a different one, so an installer
+ * pointed at somebody else's deployment fails with a sentence instead of a
+ * half-working sign-in.
+ */
+const APP_ID = process.env['SNOW_APP_ID'] ?? process.env['INDRA_LOADER_APP_ID'] ?? '7cceaf553a603ceb8d54a6c2'
 
 const LOGIN_TIMEOUT_MS = 20_000
 
@@ -142,6 +160,10 @@ export async function login(username: string, password: string): Promise<AuthRes
   // sent anywhere.
   if (!user || !password) {
     return { ok: false, error: 'Enter username & password' }
+  }
+
+  if (!AUTH_BASE) {
+    return { ok: false, error: 'This build has no sign-in service configured' }
   }
 
   const device = deviceId(APP_ID)

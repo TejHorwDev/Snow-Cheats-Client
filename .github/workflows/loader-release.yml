@@ -1,10 +1,10 @@
-name: Build INDRA LOADER release
+name: Build SNOW LOADER release
 
 # Two ways to start it:
 #   • push a tag like loader-v1.0.1 → builds and publishes a GitHub Release
 #   • "Run workflow"                → builds, and publishes only if asked to
 #
-# The tag carries the `loader-` prefix because INDRA HUB releases from this same
+# The tag carries the `loader-` prefix because SNOW HUB releases from this same
 # repository. The loader's updater finds its own releases by that prefix, so a
 # tag without it would be invisible to the app — refused here rather than
 # discovered by a user who never receives an update.
@@ -57,7 +57,7 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           echo "value=$version" >> "$GITHUB_OUTPUT"
-          echo "Releasing INDRA LOADER $version"
+          echo "Releasing SNOW LOADER $version"
           if [ "${{ startsWith(github.ref, 'refs/tags/') }}" = "true" ]; then
             if [ "loader-v$version" != "${{ github.ref_name }}" ]; then
               echo "package.json says $version but the tag is ${{ github.ref_name }}" >&2
@@ -69,24 +69,34 @@ jobs:
       - name: Refuse to ship a release that does not compile
         run: npm run typecheck
 
-      # The catalogue's address is compiled into the app: an installed copy has no
-      # environment to read. A repository variable overrides the default, so moving
-      # the API is a settings change rather than a release, and the value below is
-      # what ships when nobody has set one.
+      # One deployment serves both the catalogue and the sign-in service, and its
+      # address is compiled into the app: an installed copy has no environment to
+      # read. A repository variable overrides the default, so moving the panel is a
+      # settings change plus a rebuild rather than a source change.
       - name: Compile main, preload and renderer
         run: npm run build
         env:
-          INDRA_LOADER_API: ${{ vars.INDRA_LOADER_API || 'https://indra-loader-api.onrender.com' }}
+          SNOW_LOADER_API: ${{ vars.SNOW_LOADER_API || vars.INDRA_LOADER_API || 'https://snow-loader-api.onrender.com' }}
 
-      # The catalogue address has to survive the build. If it does not, the app
-      # ships with an empty one and shows an empty library that looks exactly like a
-      # correct install with nothing published — the worst possible failure.
-      - name: Prove the catalogue address is compiled in
+      # The address has to survive the build. If it does not, the app ships with an
+      # empty one: an empty library that looks exactly like a correct install with
+      # nothing published, and a sign-in screen that can never work. This is the
+      # worst possible failure and it is invisible until somebody tries to use it.
+      - name: Prove the deployment address is compiled in
         shell: bash
+        env:
+          API: ${{ vars.SNOW_LOADER_API || vars.INDRA_LOADER_API || 'https://snow-loader-api.onrender.com' }}
         run: |
-          grep -q "indra-loader-api.onrender.com" out/main/index.js || {
-            echo "the catalogue address is missing from the build"; exit 1; }
-          echo "the app knows where its catalogue is"
+          test -n "$API" || { echo "no deployment address to compile in"; exit 1; }
+          # The app bundle, not the shim: the shim only decides which copy of the
+          # app to load and never makes a request of its own. It should carry the
+          # address zero times.
+          test "$(grep -cF "$API" out/main/index.js)" -ge 2 || {
+            echo "the deployment address $API is missing from the app"; exit 1; }
+          if grep -qF "$API" out/main/bootstrap.js; then
+            echo "the startup shim should not carry the address"; exit 1
+          fi
+          echo "catalogue and sign-in both point at $API"
 
       # The two things that can silently rot: release selection (a hub release
       # must never be offered to the loader) and payload adoption.
@@ -159,7 +169,7 @@ jobs:
           # update cannot replace.
           Remove-Item -Force "payload/main/bootstrap.js"
 
-          $asar = "release/INDRA-LOADER-Payload-$version.asar"
+          $asar = "release/SNOW-LOADER-Payload-$version.asar"
           npx --no-install asar pack payload $asar
           if (!(Test-Path $asar)) { throw "The update payload was not produced" }
 
@@ -174,7 +184,7 @@ jobs:
             throw "The payload must not contain the shim — the installed copy owns the boot"
           }
 
-          $file = "INDRA-LOADER-Payload-$version.asar"
+          $file = "SNOW-LOADER-Payload-$version.asar"
           $hash = (Get-FileHash "release/$file" -Algorithm SHA256).Hash.ToLower()
           $size = (Get-Item "release/$file").Length
           $url = "https://github.com/${{ github.repository }}/releases/download/$tag/$file"
@@ -207,10 +217,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: loader-v${{ steps.version.outputs.value }}
-          name: INDRA LOADER v${{ steps.version.outputs.value }}
+          name: SNOW LOADER v${{ steps.version.outputs.value }}
           files: |
             apps/loader/release/*.exe
-            apps/loader/release/INDRA-LOADER-Payload-*.asar
+            apps/loader/release/SNOW-LOADER-Payload-*.asar
             apps/loader/release/payload.json
           generate_release_notes: true
           fail_on_unmatched_files: true
@@ -220,9 +230,9 @@ jobs:
       - name: Upload the installer as a run artifact
         uses: actions/upload-artifact@v4
         with:
-          name: indra-loader-windows
+          name: snow-loader-windows
           path: |
             apps/loader/release/*.exe
-            apps/loader/release/INDRA-LOADER-Payload-*.asar
+            apps/loader/release/SNOW-LOADER-Payload-*.asar
             apps/loader/release/payload.json
           if-no-files-found: error

@@ -156,7 +156,7 @@ export default async function OverviewPage(): Promise<React.JSX.Element> {
               <span className="mono">
                 {gated} of {apps.length} gated
               </span>
-              <span className="hint">by INDRA Auth, when the app opens</span>
+              <span className="hint">by SNOW Auth, when the app opens</span>
             </dd>
 
             <dt>Update feed</dt>

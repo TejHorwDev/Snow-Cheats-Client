@@ -72,7 +72,7 @@ export default function LinkConfig(): React.JSX.Element {
           id="website"
           type="url"
           value={website}
-          placeholder="https://indra-cheats.com"
+          placeholder="https://snow-cheats.com"
           onChange={(event) => setWebsite(event.target.value)}
         />
         <span className="hint">The landing page&apos;s Website button. Empty hides it.</span>

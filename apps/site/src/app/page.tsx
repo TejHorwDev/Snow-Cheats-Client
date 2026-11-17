@@ -95,7 +95,7 @@ export default async function Home(): Promise<React.JSX.Element> {
     const source = products.find((product) => product.image)?.image
     if (!source) return ''
     try {
-      return new URL(source, 'https://indra-site').origin
+      return new URL(source, 'https://snow-site').origin
     } catch {
       return ''
     }
@@ -119,7 +119,7 @@ export default async function Home(): Promise<React.JSX.Element> {
             <div className="hero-inner fade-up">
               <span className="kicker">
                 <i />
-                INDRA LOADER {version}
+                SNOW LOADER {version}
               </span>
 
               <h1 className="hero-title wordmark">Browse the library.</h1>

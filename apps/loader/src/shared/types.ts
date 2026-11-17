@@ -60,7 +60,7 @@ export interface LoaderApp {
   artworkBlur: number
   artworkDim: number
   fileUrl: string
-  /** The product's id in INDRA Auth. Empty means the app is not gated. */
+  /** The product's id in SNOW Auth. Empty means the app is not gated. */
   keyauthAppId: string
   /**
    * Optional SHA-256 of the executable. When the catalogue publishes one, a
@@ -206,7 +206,7 @@ export interface LoaderBridge {
     /**
      * What to point the backdrop at, right now.
      *
-     * `indra-film://…` when the published film is already on disk, the remote address
+     * `snow-film://…` when the published film is already on disk, the remote address
      * when it is not, and null before anything has been published. Asked at mount so the
      * film can start with the first paint instead of after a network round trip.
      */
@@ -247,7 +247,7 @@ export interface LoaderBridge {
     /** The token never leaves the main process — this returns who, not what. */
     login: (username: string, password: string) => Promise<AuthResult>
     /**
-     * The product ids this account owns, from INDRA Auth. The single source of
+     * The product ids this account owns, from SNOW Auth. The single source of
      * entitlement; empty means "nothing owned", never "unknown".
      */
     owned: () => Promise<string[]>

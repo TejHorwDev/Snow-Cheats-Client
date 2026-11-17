@@ -3,8 +3,8 @@ import { join } from 'node:path'
 /*
  * Where a downloaded application lives, and what it is called.
  *
- * One folder per product under `%APPDATA%\INDRA LOADER\downloads`, holding an
- * executable with the product's own name. It used to be `Documents\INDRA APPS`, which
+ * One folder per product under `%APPDATA%\SNOW LOADER\downloads`, holding an
+ * executable with the product's own name. It used to be `Documents\SNOW APPS`, which
  * scattered the loader's own files across a folder that belongs to the user — and left
  * the app unable to answer "what have I already downloaded?" without a second place to
  * look. Everything this app owns is now in the one folder it owns.
@@ -12,7 +12,7 @@ import { join } from 'node:path'
  * Names come from a database an admin types into, so they are treated as hostile
  * input: every character Windows refuses in a file name becomes an underscore and
  * the result is capped at 60 characters. A product called `../../windows/system32`
- * therefore creates a folder with that name inside INDRA APPS, not outside it.
+ * therefore creates a folder with that name inside SNOW APPS, not outside it.
  */
 
 const ILLEGAL = /[\\/:*?"<>|]/g
@@ -47,15 +47,15 @@ export function exeName(name: string, version = ''): string {
   return tag ? `${base} ${tag}.exe` : `${base}.exe`
 }
 
-/** The library: `%APPDATA%\INDRA LOADER\downloads`. */
+/** The library: `%APPDATA%\SNOW LOADER\downloads`. */
 export function libraryDir(userData: string): string {
   return join(userData, 'downloads')
 }
 
 export interface AppPaths {
-  /** `…\INDRA LOADER\downloads\<name>` */
+  /** `…\SNOW LOADER\downloads\<name>` */
   dir: string
-  /** `…\INDRA LOADER\downloads\<name>\<name> <version>.exe` */
+  /** `…\SNOW LOADER\downloads\<name>\<name> <version>.exe` */
   exe: string
 }
 

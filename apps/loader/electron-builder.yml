@@ -1,5 +1,5 @@
-appId: com.indra.loader
-productName: INDRA LOADER
+appId: com.snow.loader
+productName: SNOW LOADER
 copyright: Copyright © 2026 TejHorwDev
 
 # Installers are build artifacts, never committed.
@@ -20,7 +20,7 @@ asar: true
 publish:
   provider: github
   owner: TejHorwDev
-  repo: INDRA-HUB
+  repo: Snow-Cheats-Client
   releaseType: release
 
 win:
@@ -36,7 +36,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: INDRA LOADER
+  shortcutName: SNOW LOADER
   # Downloaded apps and the device identity must survive an uninstall.
   deleteAppDataOnUninstall: false
-  artifactName: INDRA-LOADER-Setup-${version}.${ext}
+  artifactName: SNOW-LOADER-Setup-${version}.${ext}

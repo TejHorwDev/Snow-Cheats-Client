@@ -7,11 +7,11 @@ import './globals.css'
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   alternates: { canonical: '/' },
-  title: 'INDRA — software for people who notice the difference',
+  title: 'SNOW — software for people who notice the difference',
   description:
-    'Everything INDRA publishes, in one place. One loader, one sign-in, every product — installed and kept current automatically.',
+    'Everything SNOW publishes, in one place. One loader, one sign-in, every product — installed and kept current automatically.',
   openGraph: {
-    title: 'INDRA',
+    title: 'SNOW',
     description: 'One loader. Every product. Kept current automatically.',
     type: 'website'
   }

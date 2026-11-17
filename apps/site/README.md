@@ -1,4 +1,4 @@
-# INDRA — the public site
+# SNOW — the public site
 
 The page you send people to. It answers three questions in order: what is this, what is
 published right now, and where do I get it.
@@ -23,7 +23,7 @@ after it wakes is slow, and no amount of caching on this side changes that.
 
 The download is always the newest build: the button points at
 `GET /api/loader/installer`, which resolves the latest release on every request, and the
-address carries the version (`?v=1.0.52`) so a cached response can only ever be the build it
+address carries the version (`?v=1.0.0`) so a cached response can only ever be the build it
 was named after.
 
 **The number under the button is the file, not a guess.** The update feed describes the
@@ -67,7 +67,7 @@ INDRA_SITE_DEMO=1 npm run dev
 
 ## Where it is deployed
 
-**Vercel**, project `indra-site`, live at <https://indra-site-indra-df9b.vercel.app>.
+**Vercel**, project `snow-site`, live at <https://snow-site-snow-df9b.vercel.app>.
 
 The panel's `website` setting points at it, so the loader and the site agree about where
 "the website" is.
@@ -150,6 +150,6 @@ object at two distances.
 
 | name | default | meaning |
 | --- | --- | --- |
-| `INDRA_API` | `https://indra-loader-api.onrender.com` | which panel to read |
+| `SNOW_API` | `https://snow-loader-api.onrender.com` | which panel to read (`INDRA_API` is still accepted) |
 | `SITE_URL` | the Vercel URL | this site's own address, for canonical links and the sitemap |
-| `INDRA_SITE_DEMO` | unset | `1` fills an empty catalogue with stand-in products, for design work only |
+| `SNOW_SITE_DEMO` | unset | `1` fills an empty catalogue with stand-in products, for design work only |

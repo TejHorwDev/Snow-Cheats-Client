@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const renderer = join(root, 'src/renderer/src')
 const main = join(root, 'src/main')
-const work = join(tmpdir(), 'indra-loader-ui-sim')
+const work = join(tmpdir(), 'snow-loader-ui-sim')
 mkdirSync(work, { recursive: true })
 
 let failures = 0
@@ -215,7 +215,7 @@ check('the card carries no version', !/app\.version/.test(shelf))
 check('the card carries no description', !/app\.description/.test(shelf))
 check('the artwork fills the card', /absolute inset-0/.test(shelf) && !/h-\[128px\]/.test(shelf))
 check('the library is called Browse library', /Browse library/.test(dash))
-check('and the library has no corner label', !/Indra Loader/i.test(dash) && !/\{username\}/.test(dash))
+check('and the library has no corner label', !/Snow Loader/i.test(dash) && !/\{username\}/.test(dash))
 
 console.log('\nThe product screen')
 /*
@@ -409,7 +409,7 @@ check('the cached source wins over the published address', /video=\{film \|\| co
 check('the film is served from disk, not the network', /protocol\.handle\(SCHEME/.test(filmCache))
 check('and it is fetched once, for next time', /export function ensureFilm/.test(filmCache))
 check('an old film is not kept forever', /const KEEP = 2/.test(filmCache))
-check('the scheme is allowed by the policy', /media-src 'self' blob: https: indra-film:/.test(readFileSync(join(main, 'index.ts'), 'utf8')))
+check('the scheme is allowed by the policy', /media-src 'self' blob: https: snow-film:/.test(readFileSync(join(main, 'index.ts'), 'utf8')))
 
 /* ------------------------------------------------------- the description ---- */
 

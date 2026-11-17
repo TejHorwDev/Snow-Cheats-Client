@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Builds
+.next/
+out/
+dist/
+release/
+*.tsbuildinfo
+
+# Local environment and deployment notes — never committed.
+.env
+.env.*
+!.env.example
+.env.local.deploy
+deployment.local.md
+
+# Simulator scratch
+.sim/
+.sim-*/
+
+# OS noise
+.DS_Store
+Thumbs.db

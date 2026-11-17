@@ -596,7 +596,7 @@ export default function Products(): React.JSX.Element {
 
             <div className="field" style={{ flex: 2, minWidth: 200 }}>
               <label className="label" htmlFor={`keyauth-${current.id}`}>
-                INDRA Auth app id
+                SNOW Auth app id
               </label>
               <input
                 id={`keyauth-${current.id}`}

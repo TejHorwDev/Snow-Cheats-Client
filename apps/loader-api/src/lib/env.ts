@@ -15,6 +15,14 @@ export const env = {
   supabaseUrl: text('SUPABASE_URL'),
   supabaseServiceKey: text('SUPABASE_SERVICE_ROLE_KEY'),
 
+  /**
+   * The product id this deployment's `/v1/*` service answers for. The installer
+   * carries the same value, so a build pointed at the wrong service is refused with
+   * a sentence instead of a mystery. Empty means "accept any id" — which is what a
+   * local checkout wants.
+   */
+  authAppId: text('AUTH_APP_ID'),
+
   adminUsername: text('ADMIN_USERNAME'),
   adminPassword: text('ADMIN_PASSWORD'),
   sessionSecret: text('ADMIN_SESSION_SECRET'),
@@ -73,6 +81,11 @@ export function b2Ready(): boolean {
 
 export function databaseReady(): boolean {
   return Boolean(env.supabaseUrl && env.supabaseServiceKey)
+}
+
+/** Is the sign-in service able to answer at all? */
+export function accountsReady(): boolean {
+  return databaseReady()
 }
 
 export function adminReady(): boolean {

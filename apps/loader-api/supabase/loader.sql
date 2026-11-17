@@ -1,13 +1,13 @@
--- INDRA LOADER — catalogue and links
+-- SNOW LOADER — catalogue and links
 --
--- Applied to the shared project (`indra-hub`, ref cztyznuoferktewdhyji) as the
+-- Applied to the project `Snow Cheats Loader` (ref pqomyuqirfygoccsmbid) as the
 -- migration `loader_catalogue`. Kept here so the schema exists in the repository
--- rather than only in a dashboard, and so a second deployment can be rebuilt from
+-- rather than only in a dashboard, and so the deployment can be rebuilt from
 -- nothing.
 --
--- The tables are `loader_*`, not `apps`/`config`. Every other table in that project
--- is `indra_*` and belongs to the hub; two applications, one database, and a prefix
--- is what keeps them apart. Nothing in either app can read the other's rows.
+-- The tables are `loader_*`, not `apps`/`config`, and the sign-in service's are
+-- `auth_*` (see `auth.sql`). One owner, one database, and a prefix per service is
+-- what keeps two halves of one product from reading each other's rows by accident.
 --
 -- Safe to run again: every object is created only if it is missing.
 
@@ -25,7 +25,7 @@ create table if not exists public.loader_apps (
   image_url text not null default '',
   exe_url text not null default '',
 
-  -- The product's id in INDRA Auth. Empty means the app is not gated.
+  -- The product's id in SNOW Auth. Empty means the app is not gated.
   keyauth_app_id text not null default '',
 
   -- The kill switch: `locked` hides a product from every user, including the ones
@@ -95,9 +95,20 @@ on conflict (key) do nothing;
 
 -- --------------------------------------------------------------- bucket ----
 --
--- Private, 300 MB per file. Nothing has to be made world-readable: the API streams
--- the object itself, so the bucket never needs a public policy.
+-- Public, 50 MB per file — the free plan's ceiling, and the truth is better than a
+-- promise the plan cannot keep.
+--
+-- Public because artwork and film are the picture in a shop window and the rule for
+-- this deployment is that they are served by the bucket directly: a card clip must
+-- not be relayed through a free API instance that has to wake up first. Installers
+-- are the exception and are never stored here — they live on GitHub Releases or a
+-- file host, and the panel holds the link.
+--
+-- Re-running this row updates it, so a project created by clicking through the
+-- dashboard ends up with the same bucket the code expects.
 
 insert into storage.buckets (id, name, public, file_size_limit)
-values ('loader-files', 'loader-files', false, 314572800)
-on conflict (id) do nothing;
+values ('loader-files', 'loader-files', true, 52428800)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit;

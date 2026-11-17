@@ -20,7 +20,7 @@ import { Readable } from 'node:stream'
 import { build } from 'esbuild'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const work = join(tmpdir(), 'indra-loader-api-sim')
+const work = join(tmpdir(), 'snow-loader-api-sim')
 /*
  * Bundles are written inside the project, not the temp folder: the AWS SDK and
  * Supabase are kept external (bundled to ESM they break on `require('node:https')`)
@@ -225,7 +225,7 @@ async function main() {
   )
   check(
     'a backblaze public url yields its key',
-    urls.keyFromUrl('https://f004.backblazeb2.com/file/indra-files/videos/f.mp4') === 'videos/f.mp4'
+    urls.keyFromUrl('https://f004.backblazeb2.com/file/snow-files/videos/f.mp4') === 'videos/f.mp4'
   )
   check('an r2 public url yields its key', urls.keyFromUrl('https://pub-abc123.r2.dev/images/a.webm') === 'images/a.webm')
   check('a page is not an object', urls.keyFromUrl('https://site.example/p/external-max') === null)

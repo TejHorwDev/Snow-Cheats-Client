@@ -11,12 +11,16 @@
  */
 
 /** The API that already serves the loader. Overridable for a staging deploy. */
-const API = (process.env['INDRA_API'] ?? 'https://indra-loader-api.onrender.com').replace(/\/+$/, '')
+const API = (
+  process.env['SNOW_API'] ??
+  process.env['INDRA_API'] ??
+  'https://snow-loader-api.onrender.com'
+).replace(/\/+$/, '')
 
 /**
  * This site's own address, for canonical links and the sitemap.
  */
-export const SITE_URL = (process.env['SITE_URL'] ?? 'https://indra-site.onrender.com').replace(/\/+$/, '')
+export const SITE_URL = (process.env['SITE_URL'] ?? 'https://snow-site.onrender.com').replace(/\/+$/, '')
 
 export interface Product {
   id: string
@@ -185,7 +189,7 @@ async function read<T>(path: string, fallback: T): Promise<T> {
 /*
  * A stand-in catalogue for looking at the design without a deployment.
  *
- *   INDRA_SITE_DEMO=1 npm run dev
+ *   SNOW_SITE_DEMO=1 npm run dev
  *
  * Only reached when that variable is set, and never on the deployed service.
  */
@@ -220,7 +224,7 @@ export async function getProducts(): Promise<Product[]> {
   const body = await read<{ apps?: RawApp[] }>('/api/loader/apps', {})
   const apps = Array.isArray(body.apps) ? body.apps : []
   const products = apps.map(toProduct).filter((product): product is Product => product !== null)
-  if (products.length === 0 && process.env['INDRA_SITE_DEMO'] === '1') return demoProducts()
+  if (products.length === 0 && process.env['SNOW_SITE_DEMO'] === '1') return demoProducts()
   return products
 }
 
@@ -331,7 +335,7 @@ export interface Loader {
   version: string | null
   /** The installer's real size. Null when it could not be verified; the page then says nothing. */
   bytes: number | null
-  /** The file you get, e.g. `INDRA-LOADER-Setup-1.0.52.exe`. */
+  /** The file you get, e.g. `SNOW-LOADER-Setup-1.0.52.exe`. */
   name: string | null
   /** True when the pipe answered with a file that exists. */
   verified: boolean
@@ -372,7 +376,7 @@ export async function getLoader(): Promise<Loader> {
       typeof probe.name === 'string' && probe.name
         ? probe.name
         : version
-          ? `INDRA-LOADER-Setup-${version}.exe`
+          ? `SNOW-LOADER-Setup-${version}.exe`
           : null,
     verified: probe.reachable === true && bytes !== null,
     href: version ? `${INSTALLER_URL}?v=${encodeURIComponent(version)}` : INSTALLER_URL

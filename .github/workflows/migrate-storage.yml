@@ -12,7 +12,7 @@
 #   SUPABASE_SERVICE_ROLE_KEY    the service role key, from Supabase → Project settings → API
 #   B2_KEY_ID                    from the Backblaze application key
 #   B2_APPLICATION_KEY           from the same key
-#   B2_BUCKET                    the bucket name, e.g. indra-files
+#   B2_BUCKET                    the bucket name, e.g. snow-files
 #   B2_REGION                    the bucket's region, e.g. us-east-005
 #   B2_PUBLIC_URL                optional, only when a Cloudflare domain sits in front
 #   API_BASE_URL                 optional, defaults to the Render service
@@ -100,7 +100,7 @@ jobs:
           B2_BUCKET: ${{ secrets.B2_BUCKET }}
           B2_REGION: ${{ secrets.B2_REGION }}
           B2_PUBLIC_URL: ${{ secrets.B2_PUBLIC_URL }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://indra-loader-api.onrender.com' }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://snow-loader-api.onrender.com' }}
         run: |
           set -o pipefail
           node scripts/migrate-storage.mjs ${{ inputs.apply && '--apply' || '' }} 2>&1 | tee migrate.log

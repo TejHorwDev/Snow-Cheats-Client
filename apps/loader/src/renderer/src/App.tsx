@@ -170,7 +170,7 @@ export default function App(): React.JSX.Element {
    * The film, as the backdrop should play it.
    *
    * Separate from `config.video`, which is the address the panel published. When the film
-   * has been fetched once it lives on disk, and this is the `indra-film://` address for
+   * has been fetched once it lives on disk, and this is the `snow-film://` address for
    * that file — no network, no waiting. It is asked for at mount, before anything is
    * fetched from the network, so the first paint can already have a picture behind it.
    */
@@ -541,7 +541,7 @@ export default function App(): React.JSX.Element {
       {screen === 'home' && config.maintenance && curtain === 'idle' ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center px-10 text-center">
           <div className="text-[9.5px] font-semibold uppercase tracking-[0.28em] text-[var(--color-ink-3)]">
-            Indra Loader
+            Snow Loader
           </div>
           <div className="mt-3 text-[19px] leading-tight">Down for maintenance</div>
           <p className="mt-2 max-w-[420px] text-[11.5px] leading-[1.7] text-[var(--color-ink-2)]">

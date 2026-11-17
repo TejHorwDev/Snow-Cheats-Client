@@ -21,7 +21,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const work = join(tmpdir(), 'indra-loader-download-sim')
+const work = join(tmpdir(), 'snow-loader-download-sim')
 
 let failures = 0
 const check = (label, ok, detail = '') => {
@@ -316,7 +316,7 @@ async function main() {
   check('the second launch does not fetch it again', (await film.ensureFilm(filmUrl)) === false)
 
   const source = film.filmSource(filmUrl)
-  check('the source becomes a local scheme', /^indra-film:\/\/film\/[a-f0-9]{16}\.mp4$/.test(source ?? ''), source)
+  check('the source becomes a local scheme', /^snow-film:\/\/film\/[a-f0-9]{16}\.mp4$/.test(source ?? ''), source)
   check('a film that is not cached is left to the network', film.filmSource('https://example.test/other.mp4') === 'https://example.test/other.mp4')
   check('and an empty address is nothing', film.filmSource('') === null)
   check('the last film can be played without asking anyone', film.currentFilmSource() === source)
@@ -326,19 +326,19 @@ async function main() {
    * The protocol handler, called the way a media element calls it — including the range
    * request a `<video>` makes when it seeks, which is what looping is.
    */
-  const handler = globalThis.__electron__.handlers?.['indra-film']
+  const handler = globalThis.__electron__.handlers?.['snow-film']
   check('the local scheme is registered', typeof handler === 'function')
 
   if (typeof handler === 'function') {
-    const name = source.replace('indra-film://film/', '')
-    const whole = await handler(new Request(`indra-film://film/${name}`))
+    const name = source.replace('snow-film://film/', '')
+    const whole = await handler(new Request(`snow-film://film/${name}`))
     check('it answers 200', whole.status === 200)
     check('with the length', whole.headers.get('content-length') === String(body.length))
     const read = Buffer.from(await whole.arrayBuffer())
     check('and the bytes are the film', read.equals(body))
 
     const part = await handler(
-      new Request(`indra-film://film/${name}`, { headers: { range: 'bytes=100-199' } })
+      new Request(`snow-film://film/${name}`, { headers: { range: 'bytes=100-199' } })
     )
     check('a range answers 206', part.status === 206)
     check(
@@ -348,13 +348,13 @@ async function main() {
     )
     check('and a slice, not the file', Buffer.from(await part.arrayBuffer()).equals(body.subarray(100, 200)))
 
-    const past = await handler(new Request(`indra-film://film/${name}`, { headers: { range: `bytes=${body.length}-` } }))
+    const past = await handler(new Request(`snow-film://film/${name}`, { headers: { range: `bytes=${body.length}-` } }))
     check('a range past the end is 416', past.status === 416)
 
     // The scheme serves one folder and nothing else.
-    const escape = await handler(new Request('indra-film://film/../../secrets.mp4'))
+    const escape = await handler(new Request('snow-film://film/../../secrets.mp4'))
     check('a path is refused', escape.status === 404)
-    const wrong = await handler(new Request('indra-film://film/not-a-film.mp4'))
+    const wrong = await handler(new Request('snow-film://film/not-a-film.mp4'))
     check('an unknown name is refused', wrong.status === 404)
   }
 

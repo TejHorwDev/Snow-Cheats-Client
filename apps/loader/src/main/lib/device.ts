@@ -4,14 +4,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /*
- * The device identity INDRA Auth sees.
+ * The device identity SNOW Auth sees.
  *
  * 32 random bytes as 64 lowercase hex characters, kept per application under
- * %LOCALAPPDATA%\INDRAAuth\<app_id>\ and reused forever.
+ * %LOCALAPPDATA%\SnowAuth\<app_id>\ and reused forever.
  *
  * Two details matter more than they look:
  *
- *  - It is stored per app_id, so INDRA HUB and INDRA LOADER are different
+ *  - It is stored per app_id, so SNOW HUB and SNOW LOADER are different
  *    devices to the auth server, and each gets its own device limit.
  *  - It survives an uninstall. A fresh id after a reinstall would look like a
  *    new device and burn a slot the user had already used.
@@ -21,14 +21,14 @@ const VALID = /^[a-f0-9]{64}$/
 
 function root(): string {
   /*
-   * %LOCALAPPDATA%\INDRAAuth, as the design specifies. Electron's path list has
+   * %LOCALAPPDATA%\SnowAuth, as the design specifies. Electron's path list has
    * no `localAppData` entry, so the environment variable is read directly —
    * which is also what makes this the same folder whether it is resolved by this
-   * app, by INDRA HUB or by anything else on the machine.
+   * app, by SNOW HUB or by anything else on the machine.
    */
   const local = process.platform === 'win32' ? process.env['LOCALAPPDATA'] : undefined
   const base = local && local.trim() ? local : app.getPath('appData')
-  return join(base, 'INDRAAuth')
+  return join(base, 'SnowAuth')
 }
 
 function file(appId: string): string {
