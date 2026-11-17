@@ -81,6 +81,45 @@ export function appProblem(answer: UpstreamAnswer | null): boolean {
   return mentionsApp && mentionsRejection
 }
 
+/*
+ * What the panel said to each attempt, kept in memory for the health report.
+ *
+ * "Application not available" is one sentence for a wrong id, an id that belongs to
+ * somebody else's application, and a genuine configuration mistake — and none of
+ * them is visible from the sign-in screen. Five entries, a sentence each, no
+ * usernames and no passwords: enough to see which ids were refused and in whose
+ * words, which is the difference between fixing it and guessing again.
+ */
+export interface LoginAttempt {
+  app_id: string
+  status: number
+  detail: string
+  at: string
+}
+
+let lastAttempts: LoginAttempt[] = []
+
+export function noteAttempt(appId: string | null, answer: UpstreamAnswer | null): void {
+  const detail =
+    typeof (answer?.body as { detail?: unknown })?.detail === 'string'
+      ? String((answer?.body as { detail?: string }).detail)
+      : JSON.stringify(answer?.body ?? null)
+
+  lastAttempts = [
+    ...lastAttempts.slice(-4),
+    {
+      app_id: appId === null ? '(none)' : appId,
+      status: answer?.status ?? 0,
+      detail: detail.slice(0, 160),
+      at: new Date().toISOString()
+    }
+  ]
+}
+
+export function loginAttempts(): LoginAttempt[] {
+  return lastAttempts
+}
+
 export interface UpstreamAnswer {
   status: number
   body: unknown
