@@ -9,7 +9,7 @@ import { useState } from 'react'
  * It says the same thing for a wrong username and a wrong password, because the
  * server does. Rate limiting is the server's job; this only reports it.
  *
- * A wrong guess shakes the panel once, which is the only place in the product that
+ * A wrong guess shakes the form once, which is the only place in the product that
  * any motion is used to say "no" rather than "here".
  */
 export default function LoginForm(): React.JSX.Element {
@@ -51,56 +51,53 @@ export default function LoginForm(): React.JSX.Element {
   }
 
   return (
-    <form onSubmit={submit} key={attempt} className={attempt ? 'shake' : undefined}>
-      <div className="card">
-        <div className="field">
-          <label className="label" htmlFor="username">
-            Username
-          </label>
-          <input
-            id="username"
-            type="text"
-            autoComplete="username"
-            autoFocus
-            placeholder="tej"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label className="label" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
-
-        {error ? <div className="notice error">{error}</div> : null}
-
-        <button
-          className="btn primary block"
-          type="submit"
-          disabled={busy || !username || !password}
-          style={{ marginTop: 6 }}
-        >
-          {busy ? (
-            <span className="working" aria-label="Signing in">
-              <i />
-              <i />
-              <i />
-            </span>
-          ) : (
-            'Sign in'
-          )}
-        </button>
+    <form onSubmit={submit} key={attempt} className={`login-form ${attempt ? 'shake' : ''}`}>
+      <div className="field">
+        <label className="label" htmlFor="username">
+          Username
+        </label>
+        <input
+          id="username"
+          type="text"
+          autoComplete="username"
+          autoFocus
+          placeholder="operator"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+        />
       </div>
+
+      <div className="field">
+        <label className="label" htmlFor="password">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          placeholder="••••••••"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+      </div>
+
+      {error ? <div className="notice error">{error}</div> : null}
+
+      <button
+        className="btn primary block"
+        type="submit"
+        disabled={busy || !username || !password}
+      >
+        {busy ? (
+          <span className="working" aria-label="Signing in">
+            <i />
+            <i />
+            <i />
+          </span>
+        ) : (
+          'Sign in'
+        )}
+      </button>
     </form>
   )
 }
