@@ -173,8 +173,14 @@ export default function Licences(): React.JSX.Element {
     <>
       {status && <p className="note note--warn">{status}</p>}
 
-      <section className="card">
-        <h2>Mint keys</h2>
+      <div className="grid">
+      <section className="panel span-6">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Mint keys</h2>
+            <p className="panel-sub">A key&apos;s plaintext is shown once, here, and never again.</p>
+          </div>
+        </div>
         <div className="row">
           <label className="field">
             <span>Product</span>
@@ -225,8 +231,13 @@ export default function Licences(): React.JSX.Element {
         )}
       </section>
 
-      <section className="card">
-        <h2>Redeem a key for a customer</h2>
+      <section className="panel span-6">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Redeem a key for a customer</h2>
+            <p className="panel-sub">The loader asks for a username and password only, so a key is redeemed here.</p>
+          </div>
+        </div>
         <p className="hint">
           The loader asks for a username and password only, so a key is redeemed here: type the
           account and the key, and the product lands on that account with the licence&apos;s expiry.
@@ -255,8 +266,14 @@ export default function Licences(): React.JSX.Element {
         </button>
       </section>
 
-      <section className="card">
-        <h2>Keys</h2>
+      <section className="panel span-12">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Keys</h2>
+            <p className="panel-sub">What has been minted, and what each one is doing now.</p>
+          </div>
+          <span className="panel-action">{licences.length} total</span>
+        </div>
         {!loaded && <p className="hint">Loading…</p>}
         {loaded && licences.length === 0 && <p className="hint">No keys yet.</p>}
         {licences.length > 0 && (
@@ -304,8 +321,14 @@ export default function Licences(): React.JSX.Element {
         )}
       </section>
 
-      <section className="card">
-        <h2>Devices</h2>
+      <section className="panel span-12">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Devices</h2>
+            <p className="panel-sub">Every machine a customer has signed in from.</p>
+          </div>
+          <span className="panel-action">{devices.length} seen</span>
+        </div>
         <p className="hint">
           Every machine a customer has signed in from. Removing one frees its slot; the account keeps
           its session until it expires.
@@ -348,6 +371,7 @@ export default function Licences(): React.JSX.Element {
           </table>
         )}
       </section>
+      </div>
     </>
   )
 }

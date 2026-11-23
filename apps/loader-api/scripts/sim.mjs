@@ -361,22 +361,13 @@ async function main() {
    * be broken silently is a rule that will be broken, so every colour literal in the
    * stylesheet must be a neutral or one of the colours that carries meaning.
    */
-  console.log('\nThe palette stays classical')
+  console.log('\nThe palette is black, grey and white')
   const css = readFileSync(join(root, 'src/app/globals.css'), 'utf8')
-  // The accent, the status hues, their washes, and the cream of the login panel.
+  /* The only colour in the file is the one muted red that means damage. */
   const named = new Set([
-    // the accent, light and dark
-    '1c3a55', '142c40', '2c4f6b', '9db9d4', 'b8cee2', '24445e', '2f5675', '13212d',
-    // success
-    '2f6b4f', 'cfe0d5', 'eef5f0', '6fbf94', '254437',
-    // danger
-    '9b3a32', 'e8cdc9', 'fbf1ef', 'f6e6e3', 'e08a80', '5a2a26', '3a1d1a',
-    // warning
-    '8a6a1f', 'e7d9b8', 'faf5e8', 'd4b26a', '574a28',
-    // info
-    'cfdee8', 'eef3f7', '2f4356',
-    // the cream of the sign-in panel
-    'f4f0e6', 'f7f3e9', 'fbf8f0'
+    // damage
+    'd98c84', '241514', '4a2a27', '331c1a',
+    'a33d34', 'fbf1f0', 'e6c9c6', 'f3e2e0'
   ])
   const colours = [...new Set((css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).map((hex) => hex.slice(1).toLowerCase()))]
   const offPalette = colours.filter((hex) => {
@@ -387,7 +378,9 @@ async function main() {
     const b = parseInt(full.slice(4, 6), 16)
     return Math.max(r, g, b) - Math.min(r, g, b) > 24
   })
-  check('every colour is a neutral, the accent, or a status', offPalette.length === 0, offPalette.join(', '))
+  check('every colour is a neutral or the one warning red', offPalette.length === 0, offPalette.join(', '))
+  check('the accent is white in the dark room', /:root \{[\s\S]{0,4000}?--accent: #ffffff/.test(css))
+  check('and black in the light one', /html\[data-theme='light'\] \{[\s\S]{0,4000}?--accent: #111111/.test(css))
   check('and nothing is drawn with a gradient', !/gradient\(/.test(css))
   check('the type is self-hosted, so it renders offline', /geist\/font\/sans/.test(readFileSync(join(root, 'src/app/layout.tsx'), 'utf8')))
   check(
@@ -404,9 +397,11 @@ async function main() {
     'and the switch is in the topbar',
     /ThemeToggle/.test(readFileSync(join(root, 'src/components/Topbar.tsx'), 'utf8'))
   )
+
   /*
-   * The shape of the redesign, held the same way: a rail and a room, a serif for the
-   * facts, flat cards, no motion that is not feedback, and a measure the eye can follow.
+   * The shape of the redesign, held the same way: a rail and a room on a desk, a bar and
+   * a stack of cards on a phone, a serif for the facts, flat boxes, no motion that is not
+   * feedback, and a measure the eye can follow.
    */
   check('the serif carries the facts, not the furniture', /--serif:/.test(css) && /\.stat-value \{[\s\S]{0,200}?font-family: var\(--serif\)/.test(css))
   check(
@@ -415,17 +410,17 @@ async function main() {
       /aria-current/.test(readFileSync(join(root, 'src/components/Nav.tsx'), 'utf8'))
   )
   check(
-    'cards are flat — nothing tilts or catches the pointer',
-    !/\.card[^{]*\{[^}]*box-shadow:(?! none)/.test(css) && !/\.card[^{]*\{[^}]*transform:/.test(css)
+    'boxes are flat — nothing tilts or catches the pointer',
+    !/\.panel[^{]*\{[^}]*box-shadow:(?! none)/.test(css) && !/\.panel[^{]*\{[^}]*[^\w-]transform:/.test(css)
   )
-  check('a number is not wearing a bar', !/\.stat::(before|after)/.test(css) && !/\.stat-bar/.test(css))
+  check('a number is not wearing a bar', !/\.stat-bar/.test(css))
   check(
     'the headline is set in the serif, at a size that reads as one',
     /h1 \{[\s\S]{0,200}?font-family: var\(--serif\)/.test(css) && /font-size: clamp\(34px/.test(css)
   )
   check(
     'the page is laid out on a rail, not a stack of cards',
-    /\.shell \{[\s\S]{0,120}?grid-template-columns: 252px/.test(css) && /\.rail \{[\s\S]{0,160}?position: sticky/.test(css)
+    /\.shell \{[\s\S]{0,120}?grid-template-columns: 264px/.test(css) && /\.rail \{[\s\S]{0,200}?position: sticky/.test(css)
   )
   check(
     'and every page opens on the same plate',
@@ -435,12 +430,43 @@ async function main() {
   check('and any machine that asked for less motion gets none', /prefers-reduced-motion: reduce/.test(css))
   check(
     'the content sits on a measured measure, not edge to edge',
-    /\.content \{[\s\S]{0,200}?max-width: 1240px/.test(css) && /\.content \{[\s\S]{0,200}?margin: 0 auto/.test(css)
+    /\.content \{[\s\S]{0,200}?max-width: 1440px/.test(css) && /\.content \{[\s\S]{0,200}?margin: 0 auto/.test(css)
   )
   check('the frame and the content share one gutter', /--gutter: clamp/.test(css))
   check('and there is no ambience layer left in the app', !existsSync(join(root, 'src/components/Ambience.tsx')))
   check('the tape of repeated facts is gone from the overview', !/className="tape"/.test(readFileSync(join(root, 'src/app/admin/(panel)/page.tsx'), 'utf8')))
+
+  /*
+   * The phone is not the desk squeezed. It gets its own frame, and the contract says so.
+   */
+  console.log('\nThe phone is a different instrument')
+  const panelLayout = readFileSync(join(root, 'src/app/admin/(panel)/layout.tsx'), 'utf8')
+  const mobileNav = readFileSync(join(root, 'src/components/MobileNav.tsx'), 'utf8')
   const topbar = readFileSync(join(root, 'src/components/Topbar.tsx'), 'utf8')
+  const productsSource = readFileSync(join(root, 'src/components/Products.tsx'), 'utf8')
+  check('the rail goes away under 900 pixels', /@media \(max-width: 900px\)[\s\S]{0,240}?\.rail \{\s*display: none/.test(css))
+  check('and a tab bar takes its place', /className="mobile-tabs"/.test(mobileNav) && /\.mobile-tabs \{[\s\S]{0,200}?position: fixed/.test(css))
+  check(
+    'the four sections are on the bar',
+    ['/admin', '/admin/apps', '/admin/storage', '/admin/settings'].every((href) =>
+      mobileNav.includes(`href: '${href}'`)
+    )
+  )
+  check(
+    'and the rest of the panel is a sheet behind the fifth tab',
+    /mobile-sheet-link/.test(mobileNav) && /SignOut/.test(mobileNav) && /aria-modal="true"/.test(mobileNav)
+  )
+  check('the tab bar is in the panel layout', /<MobileNav \/>/.test(panelLayout))
+  check('the brand survives without the rail', /topbar-brand/.test(topbar))
+  check('and the light switch is on the phone too', /ThemeToggle/.test(mobileNav))
+  check(
+    'the editor becomes a sheet instead of a second column',
+    /\.editor-pane \{[\s\S]{0,200}?position: fixed/.test(css) && /is-open/.test(productsSource)
+  )
+  check(
+    'and the catalogue becomes a stack of cards, not a squeezed table',
+    /@media \(max-width: 900px\)[\s\S]*?\.product-list \{[\s\S]{0,200}?flex-direction: column/.test(css)
+  )
   check('the keyboard opens the jump box', /CommandPalette/.test(topbar) && /metaKey/.test(readFileSync(join(root, 'src/components/CommandPalette.tsx'), 'utf8')))
   check('and Escape closes it', /key === 'Escape'/.test(readFileSync(join(root, 'src/components/CommandPalette.tsx'), 'utf8')))
 

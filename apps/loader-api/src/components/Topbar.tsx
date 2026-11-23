@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import CommandPalette from '@/components/CommandPalette'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -10,6 +11,9 @@ import ThemeToggle from '@/components/ThemeToggle'
  * It answers one question — where am I — and holds two controls: the light switch and
  * the jump box. The section name is read from the address rather than passed down, so a
  * page cannot disagree with the rail about where it is.
+ *
+ * On a phone the rail is gone, so the strip also carries the wordmark: it is the only
+ * place left to say whose panel this is.
  */
 
 const SECTIONS: Array<{ prefix: string; label: string }> = [
@@ -29,6 +33,11 @@ export default function Topbar(): React.JSX.Element {
 
   return (
     <header className="topbar">
+      <Link href="/admin" className="topbar-brand" aria-label="SNOW LOADER admin — overview">
+        <span className="brand-mark" aria-hidden="true" />
+        <span className="wordmark">SNOW LOADER</span>
+      </Link>
+
       <div className="topbar-context">
         <span className="topbar-root">SNOW LOADER</span>
         <span className="topbar-sep">/</span>

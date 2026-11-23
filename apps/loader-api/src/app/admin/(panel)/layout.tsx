@@ -5,6 +5,7 @@ import SignOut from '@/components/SignOut'
 import Nav from '@/components/Nav'
 import Topbar from '@/components/Topbar'
 import Footer from '@/components/Footer'
+import MobileNav from '@/components/MobileNav'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,9 +16,11 @@ export const dynamic = 'force-dynamic'
  * forgets to guard itself is still guarded. The API routes check again on their
  * own — a layout is not a boundary for anything that is not a page.
  *
- * The frame is a rail and a room. The rail holds the four sections and the way out;
- * the room holds the work. It is the oldest administrative layout there is, and it is
- * the one that keeps the section you are in visible while you scroll a long table.
+ * The frame is two frames. On a desk it is a rail and a room: the rail holds the four
+ * sections and the way out, and the room holds the work. Under 900 pixels the rail goes
+ * away and the phone takes over — a brand bar, the same four sections as a tab bar under
+ * the thumb, and the rest of the panel in a sheet behind the fifth tab. Same pages, same
+ * data, a different instrument.
  */
 export default async function PanelLayout({
   children
@@ -61,6 +64,8 @@ export default async function PanelLayout({
           <Footer />
         </div>
       </div>
+
+      <MobileNav />
     </div>
   )
 }
