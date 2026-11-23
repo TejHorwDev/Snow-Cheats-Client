@@ -883,7 +883,7 @@ function DescriptionPreview({ text }: { text: string }): React.JSX.Element | nul
         padding: '10px 12px',
         border: '1px solid var(--hairline)',
         borderRadius: 8,
-        background: 'rgba(255,255,255,0.02)'
+        background: 'var(--surface-2)'
       }}
     >
       <div className="label" style={{ marginBottom: 6 }}>

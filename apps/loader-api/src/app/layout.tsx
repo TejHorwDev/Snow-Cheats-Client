@@ -4,13 +4,13 @@ import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SNOW LOADER — panel',
+  title: 'SNOW LOADER — control panel',
   robots: { index: false, follow: false }
 }
 
 export const viewport: Viewport = {
-  themeColor: '#08090a',
-  colorScheme: 'dark'
+  themeColor: '#f6f4ee',
+  colorScheme: 'light'
 }
 
 /*
@@ -21,10 +21,8 @@ export const viewport: Viewport = {
  * without a network request, which matters when the whole point of this page is to tell
  * you something is wrong.
  *
- * There is no ambience layer. The panel used to carry a pool of light that followed the
- * pointer, a ring that chased it, and cards that tilted toward it. All of it was motion
- * for its own sake on a page whose job is to be read — and on a matte surface it read as
- * glare rather than as depth. The page is a page now.
+ * The serif is the panel's own: it is set only where the page states a fact — the title,
+ * a figure, a login welcome — and the sans does the work. That division is the design.
  */
 export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (

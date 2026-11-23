@@ -356,15 +356,22 @@ async function main() {
   /*
    * The look, checked as an invariant rather than as a screenshot.
    *
-   * The panel has been asked for matte black, dark grey and white — twice, in different
-   * words, after violet gradients and then neon were both rejected. A rule that can be
-   * broken silently is a rule that will be broken, so: every colour literal in the
-   * stylesheet must be a neutral, plus the three status hues that carry meaning.
+   * The panel was redesigned as a classic instrument: warm paper, ink, hairlines, one
+   * deep navy and the three status hues. No gradients, no neon, no glow. A rule that can
+   * be broken silently is a rule that will be broken, so every colour literal in the
+   * stylesheet must be a neutral or one of the colours that carries meaning.
    */
-  console.log('\nThe palette stays monochrome')
+  console.log('\nThe palette stays classical')
   const css = readFileSync(join(root, 'src/app/globals.css'), 'utf8')
-  // The three status hues, and the two lighter inks used for text on their own wash.
-  const named = new Set(['57c9a1', 'e0746a', 'cfae74', 'f0b3ac', 'a4e3cd'])
+  // The accent, the status hues, their washes, and the cream of the login panel.
+  const named = new Set([
+    '1c3a55', '142c40', '2c4f6b',
+    '2f6b4f', 'cfe0d5', 'eef5f0',
+    '9b3a32', 'e8cdc9', 'fbf1ef', 'f6e6e3',
+    '8a6a1f', 'e7d9b8', 'faf5e8',
+    'cfdee8', 'eef3f7',
+    'f4f0e6', 'f7f3e9', 'fbf8f0'
+  ])
   const colours = [...new Set((css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).map((hex) => hex.slice(1).toLowerCase()))]
   const offPalette = colours.filter((hex) => {
     const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex
@@ -372,40 +379,49 @@ async function main() {
     const r = parseInt(full.slice(0, 2), 16)
     const g = parseInt(full.slice(2, 4), 16)
     const b = parseInt(full.slice(4, 6), 16)
-    return Math.max(r, g, b) - Math.min(r, g, b) > 12
+    return Math.max(r, g, b) - Math.min(r, g, b) > 24
   })
-  check('every colour is grey, or one of the three statuses', offPalette.length === 0, offPalette.join(', '))
+  check('every colour is a neutral, the accent, or a status', offPalette.length === 0, offPalette.join(', '))
+  check('and nothing is drawn with a gradient', !/gradient\(/.test(css))
   check('the type is self-hosted, so it renders offline', /geist\/font\/sans/.test(readFileSync(join(root, 'src/app/layout.tsx'), 'utf8')))
   /*
-   * v4: the surface is flat and the type is large.
-   *
-   * Four versions of this panel accumulated light — a pointer-following pool, a ring, a
-   * tilt on every card, a wash on every surface, a moving tape of repeated facts and a
-   * pill that slid under the nav. All of it was motion and glare in service of itself.
-   * These checks hold the other line now: no tilt, no bar under a number, no tape, and
-   * type big enough to read without leaning in.
+   * The shape of the redesign, held the same way: a rail and a room, a serif for the
+   * facts, flat cards, no motion that is not feedback, and a measure the eye can follow.
    */
-  check('the sections are words with a line under the one you are on', /\.nav a\[data-active='true'\]::after/.test(css))
-  check('cards are flat — nothing tilts or catches the pointer', /\.card::before,\n\.card::after,[\s\S]{0,140}?display: none/.test(css) && /\.card \{[\s\S]{0,200}?box-shadow: none/.test(css))
+  check('the serif carries the facts, not the furniture', /--serif:/.test(css) && /\.stat-value \{[\s\S]{0,200}?font-family: var\(--serif\)/.test(css))
   check(
-    'a number is not wearing a bar',
-    /\.stat-bar,[\s\S]{0,200}?display: none/.test(css) || /\.stat-bar \{\s*display: none/.test(css)
+    'the sections sit in a rail with a rule on the one you are in',
+    /\.nav-link\[data-active='true'\]::before/.test(css) &&
+      /aria-current/.test(readFileSync(join(root, 'src/components/Nav.tsx'), 'utf8'))
   )
-  check('the headline is large enough to be a headline', /h1 \{[\s\S]{0,200}?font-size: clamp\(54px, 8\.4vw, 124px\)/.test(css))
-  check('the page is laid out on a left rail, not a stack of cards', /\.split \{[\s\S]{0,160}?grid-template-columns: minmax\(150px, 210px\)/.test(css))
-  check('and every page opens on the same plate', /\.page-head/.test(css) && /className="hero"/.test(readFileSync(join(root, 'src/app/admin/(panel)/page.tsx'), 'utf8')))
-  check('content rises on a stagger', /\.rise/.test(css) && /var\(--i/.test(css))
+  check(
+    'cards are flat — nothing tilts or catches the pointer',
+    !/\.card[^{]*\{[^}]*box-shadow:(?! none)/.test(css) && !/\.card[^{]*\{[^}]*transform:/.test(css)
+  )
+  check('a number is not wearing a bar', !/\.stat::(before|after)/.test(css) && !/\.stat-bar/.test(css))
+  check(
+    'the headline is set in the serif, at a size that reads as one',
+    /h1 \{[\s\S]{0,200}?font-family: var\(--serif\)/.test(css) && /font-size: clamp\(34px/.test(css)
+  )
+  check(
+    'the page is laid out on a rail, not a stack of cards',
+    /\.shell \{[\s\S]{0,120}?grid-template-columns: 252px/.test(css) && /\.rail \{[\s\S]{0,160}?position: sticky/.test(css)
+  )
+  check(
+    'and every page opens on the same plate',
+    /\.hero \{/.test(css) && /className="hero"/.test(readFileSync(join(root, 'src/app/admin/(panel)/page.tsx'), 'utf8'))
+  )
+  check('the page does not animate for its own sake', !/animation: rise/.test(css) && !/animation-timeline: view\(\)/.test(css))
   check('and any machine that asked for less motion gets none', /prefers-reduced-motion: reduce/.test(css))
   check(
-    'the page fills the glass rather than sitting in the middle',
-    /\.shell \{[^}]*max-width: none/.test(css)
+    'the content sits on a measured measure, not edge to edge',
+    /\.content \{[\s\S]{0,200}?max-width: 1240px/.test(css) && /\.content \{[\s\S]{0,200}?margin: 0 auto/.test(css)
   )
   check('the frame and the content share one gutter', /--gutter: clamp/.test(css))
   check('and there is no ambience layer left in the app', !existsSync(join(root, 'src/components/Ambience.tsx')))
-  check('below the fold, content waits for the scroll', /animation-timeline: view\(\)/.test(css))
   check('the tape of repeated facts is gone from the overview', !/className="tape"/.test(readFileSync(join(root, 'src/app/admin/(panel)/page.tsx'), 'utf8')))
-  const layout = readFileSync(join(root, 'src/app/admin/(panel)/layout.tsx'), 'utf8')
-  check('the keyboard opens the jump box', /CommandPalette/.test(layout) && /metaKey/.test(readFileSync(join(root, 'src/components/CommandPalette.tsx'), 'utf8')))
+  const topbar = readFileSync(join(root, 'src/components/Topbar.tsx'), 'utf8')
+  check('the keyboard opens the jump box', /CommandPalette/.test(topbar) && /metaKey/.test(readFileSync(join(root, 'src/components/CommandPalette.tsx'), 'utf8')))
   check('and Escape closes it', /key === 'Escape'/.test(readFileSync(join(root, 'src/components/CommandPalette.tsx'), 'utf8')))
 
   /*

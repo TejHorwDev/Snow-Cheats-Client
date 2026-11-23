@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { currentSession } from '@/lib/auth'
 import SignOut from '@/components/SignOut'
 import Nav from '@/components/Nav'
-import CommandPalette from '@/components/CommandPalette'
+import Topbar from '@/components/Topbar'
 import Footer from '@/components/Footer'
 
 export const dynamic = 'force-dynamic'
@@ -15,9 +15,9 @@ export const dynamic = 'force-dynamic'
  * forgets to guard itself is still guarded. The API routes check again on their
  * own — a layout is not a boundary for anything that is not a page.
  *
- * The bar is solid, not glass: a blurred backdrop over a flat page is a trick that costs
- * a compositor pass every frame to look very slightly different from a solid one. It is
- * sticky, it is a hairline thick, and it holds four words, a search box and a sign-out.
+ * The frame is a rail and a room. The rail holds the four sections and the way out;
+ * the room holds the work. It is the oldest administrative layout there is, and it is
+ * the one that keeps the section you are in visible while you scroll a long table.
  */
 export default async function PanelLayout({
   children
@@ -27,25 +27,36 @@ export default async function PanelLayout({
   if (!(await currentSession())) redirect('/admin/login')
 
   return (
-    <main className="shell">
-      <header className="bar">
-        <div className="bar-inner">
+    <div className="shell">
+      <aside className="rail">
+        <div className="rail-brand">
           <Link href="/admin" className="brand" aria-label="SNOW LOADER admin — overview">
             <span className="brand-mark" aria-hidden="true" />
             <span className="wordmark">
-              SNOW LOADER <em>/ admin</em>
+              SNOW LOADER
+              <em>Control panel</em>
             </span>
           </Link>
-
-          <div className="bar-actions">
-            <Nav />
-            <CommandPalette />
-            <SignOut />
-          </div>
         </div>
-      </header>
-      {children}
-      <Footer />
-    </main>
+
+        <Nav />
+
+        <div className="rail-foot">
+          <div className="rail-status">
+            <span className="dot" data-tone="on" />
+            Panel live
+          </div>
+          <SignOut />
+        </div>
+      </aside>
+
+      <div className="workspace">
+        <Topbar />
+        <div className="content">
+          {children}
+          <Footer />
+        </div>
+      </div>
+    </div>
   )
 }
