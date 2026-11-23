@@ -9,9 +9,17 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#f6f4ee',
-  colorScheme: 'light'
+  themeColor: '#0b0c0e'
 }
+
+/*
+ * The theme is read before the first paint, from the same key the switch writes.
+ *
+ * Without this the server-rendered dark page would be replaced by a light one after
+ * hydration — a white flash on every navigation for anybody who chose light. The script
+ * is inline and blocking on purpose: it is four lines, and it runs before the body.
+ */
+const themeScript = `(function(){try{var t=localStorage.getItem('snow-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}})()`
 
 /*
  * The frame everything hangs in.
@@ -26,7 +34,15 @@ export const viewport: Viewport = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html
+      lang="en"
+      data-theme="dark"
+      suppressHydrationWarning
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   )

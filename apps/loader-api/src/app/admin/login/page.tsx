@@ -1,4 +1,5 @@
 import LoginForm from '@/components/LoginForm'
+import ThemeToggle from '@/components/ThemeToggle'
 import { adminReady } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +40,9 @@ export default function LoginPage(): React.JSX.Element {
       </aside>
 
       <section className="login-main">
+        <div className="login-tools">
+          <ThemeToggle />
+        </div>
         <div className="login">
           <p className="login-kicker">Sign in</p>
           <h1 className="login-title">Welcome back</h1>

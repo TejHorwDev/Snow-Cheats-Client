@@ -28,6 +28,10 @@ export default async function PanelLayout({
 
   return (
     <div className="shell">
+      <a className="skip-link" href="#content">
+        Skip to content
+      </a>
+
       <aside className="rail">
         <div className="rail-brand">
           <Link href="/admin" className="brand" aria-label="SNOW LOADER admin — overview">
@@ -52,7 +56,7 @@ export default async function PanelLayout({
 
       <div className="workspace">
         <Topbar />
-        <div className="content">
+        <div className="content" id="content">
           {children}
           <Footer />
         </div>
