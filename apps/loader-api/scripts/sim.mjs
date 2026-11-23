@@ -365,11 +365,17 @@ async function main() {
   const css = readFileSync(join(root, 'src/app/globals.css'), 'utf8')
   // The accent, the status hues, their washes, and the cream of the login panel.
   const named = new Set([
-    '1c3a55', '142c40', '2c4f6b',
-    '2f6b4f', 'cfe0d5', 'eef5f0',
-    '9b3a32', 'e8cdc9', 'fbf1ef', 'f6e6e3',
-    '8a6a1f', 'e7d9b8', 'faf5e8',
-    'cfdee8', 'eef3f7',
+    // the accent, light and dark
+    '1c3a55', '142c40', '2c4f6b', '9db9d4', 'b8cee2', '24445e', '2f5675', '13212d',
+    // success
+    '2f6b4f', 'cfe0d5', 'eef5f0', '6fbf94', '254437',
+    // danger
+    '9b3a32', 'e8cdc9', 'fbf1ef', 'f6e6e3', 'e08a80', '5a2a26', '3a1d1a',
+    // warning
+    '8a6a1f', 'e7d9b8', 'faf5e8', 'd4b26a', '574a28',
+    // info
+    'cfdee8', 'eef3f7', '2f4356',
+    // the cream of the sign-in panel
     'f4f0e6', 'f7f3e9', 'fbf8f0'
   ])
   const colours = [...new Set((css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).map((hex) => hex.slice(1).toLowerCase()))]
@@ -384,6 +390,20 @@ async function main() {
   check('every colour is a neutral, the accent, or a status', offPalette.length === 0, offPalette.join(', '))
   check('and nothing is drawn with a gradient', !/gradient\(/.test(css))
   check('the type is self-hosted, so it renders offline', /geist\/font\/sans/.test(readFileSync(join(root, 'src/app/layout.tsx'), 'utf8')))
+  check(
+    'dark is the default, and light is a choice',
+    /data-theme="dark"/.test(readFileSync(join(root, 'src/app/layout.tsx'), 'utf8')) &&
+      /html\[data-theme='light'\]/.test(css)
+  )
+  check(
+    'the choice survives a reload',
+    /snow-theme/.test(readFileSync(join(root, 'src/app/layout.tsx'), 'utf8')) &&
+      /snow-theme/.test(readFileSync(join(root, 'src/components/ThemeToggle.tsx'), 'utf8'))
+  )
+  check(
+    'and the switch is in the topbar',
+    /ThemeToggle/.test(readFileSync(join(root, 'src/components/Topbar.tsx'), 'utf8'))
+  )
   /*
    * The shape of the redesign, held the same way: a rail and a room, a serif for the
    * facts, flat cards, no motion that is not feedback, and a measure the eye can follow.

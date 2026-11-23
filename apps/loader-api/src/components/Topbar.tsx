@@ -2,13 +2,14 @@
 
 import { usePathname } from 'next/navigation'
 import CommandPalette from '@/components/CommandPalette'
+import ThemeToggle from '@/components/ThemeToggle'
 
 /*
  * The strip above the work.
  *
- * It answers one question — where am I — and holds one control. The section name is
- * read from the address rather than passed down, so a page cannot disagree with the
- * rail about where it is.
+ * It answers one question — where am I — and holds two controls: the light switch and
+ * the jump box. The section name is read from the address rather than passed down, so a
+ * page cannot disagree with the rail about where it is.
  */
 
 const SECTIONS: Array<{ prefix: string; label: string }> = [
@@ -35,6 +36,7 @@ export default function Topbar(): React.JSX.Element {
       </div>
 
       <div className="topbar-actions">
+        <ThemeToggle />
         <CommandPalette />
       </div>
     </header>
