@@ -148,12 +148,16 @@ export default function Accounts(): React.JSX.Element {
 
   return (
     <>
-      <div className="card">
-        <h2>New account</h2>
-        <p className="hint" style={{ marginBottom: 14 }}>
-          Customers do not sign up. Create the account, give them the username and password, and
-          they sign in on the loader.
-        </p>
+      <section className="panel">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">New account</h2>
+            <p className="panel-sub">
+              Customers do not sign up. Create the account, give them the username and password, and
+              they sign in on the loader.
+            </p>
+          </div>
+        </div>
         <form onSubmit={create}>
           <div className="row" style={{ alignItems: 'flex-start' }}>
             <div className="field" style={{ flex: 1, minWidth: 180 }}>
@@ -249,10 +253,17 @@ export default function Accounts(): React.JSX.Element {
             Licence key (shown once): <span className="mono">{mintedKey}</span>
           </p>
         ) : null}
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Accounts</h2>
+      <section className="panel">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Accounts</h2>
+            <p className="panel-sub">
+              {users.length} customer{users.length === 1 ? '' : 's'} on this deployment.
+            </p>
+          </div>
+        </div>
         {users.length === 0 ? (
           <div className="empty">No accounts yet. The first one you create can download straight away.</div>
         ) : (
@@ -354,7 +365,7 @@ export default function Accounts(): React.JSX.Element {
             ))}
           </div>
         )}
-      </div>
+      </section>
     </>
   )
 }

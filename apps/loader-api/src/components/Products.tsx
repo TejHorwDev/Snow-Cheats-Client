@@ -437,336 +437,365 @@ export default function Products(): React.JSX.Element {
     <>
       {notice ? <div className={`notice ${notice.tone === 'info' ? '' : notice.tone}`}>{notice.text}</div> : null}
 
-      <div className="card">
-        <h2>Catalogue</h2>
-        {!loading && apps.length > 0 ? (
-          <div className="toolbar">
-            <input
-              type="search"
-              value={query}
-              placeholder="Search by name, app id or version…"
-              aria-label="Search products"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <div className="seg">
-              {(['all', 'active', 'locked', 'gated', 'empty'] as const).map((key) => (
-                <button key={key} type="button" data-active={filter === key} onClick={() => setFilter(key)}>
-                  {key === 'empty' ? 'No file' : key[0].toUpperCase() + key.slice(1)}
-                </button>
+      <div className="products-grid">
+        <section className="panel products-catalogue">
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title">Catalogue</h2>
+              <p className="panel-sub">What the loader shows. Select a row to edit it.</p>
+            </div>
+            <span className="panel-action">{apps.length} published</span>
+          </div>
+
+          {!loading && apps.length > 0 ? (
+            <div className="toolbar">
+              <input
+                type="search"
+                value={query}
+                placeholder="Search by name, app id or version…"
+                aria-label="Search products"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <div className="seg">
+                {(['all', 'active', 'locked', 'gated', 'empty'] as const).map((key) => (
+                  <button key={key} type="button" data-active={filter === key} onClick={() => setFilter(key)}>
+                    {key === 'empty' ? 'No file' : key[0].toUpperCase() + key.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {loading ? (
+            /* Bars at the height of the rows they will become, so nothing jumps when the
+               catalogue lands. */
+            <div className="skeleton" aria-label="Loading products">
+              {[0, 1, 2, 3].map((row) => (
+                <span key={row} style={{ '--i': row } as React.CSSProperties} />
               ))}
             </div>
-          </div>
-        ) : null}
-
-        {loading ? (
-          /* Bars at the height of the rows they will become, so nothing jumps when the
-             catalogue lands. */
-          <div className="skeleton" aria-label="Loading products">
-            {[0, 1, 2, 3].map((row) => (
-              <span key={row} style={{ '--i': row } as React.CSSProperties} />
-            ))}
-          </div>
-        ) : apps.length === 0 ? (
-          <div className="empty">
-            Nothing published yet.
-            <br />
-            Until there is, the loader shows an empty library — which is the truth, not a bug.
-          </div>
-        ) : shown.length === 0 ? (
-          <div className="empty">Nothing matches that filter.</div>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Status</th>
-                <th>Installer</th>
-                <th aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
+          ) : apps.length === 0 ? (
+            <div className="empty">
+              Nothing published yet.
+              <br />
+              Until there is, the loader shows an empty library — which is the truth, not a bug.
+            </div>
+          ) : shown.length === 0 ? (
+            <div className="empty">Nothing matches that filter.</div>
+          ) : (
+            <div className="product-list">
               {shown.map((app) => (
-                <tr key={app.id}>
-                  <td>
-                    <strong>{app.name}</strong>
-                    <div className="mono">
+                <div key={app.id} className="product-row" data-active={app.id === selected}>
+                  <button
+                    type="button"
+                    className="product-main"
+                    aria-pressed={app.id === selected}
+                    onClick={() => setSelected(app.id === selected ? null : app.id)}
+                  >
+                    <span className="product-name">{app.name}</span>
+                    <span className="product-meta">
                       v{app.version}
                       {app.keyauth_app_id ? ` · ${app.keyauth_app_id.slice(0, 12)}` : ' · ungated'}
-                    </div>
-                  </td>
-                  <td>
+                    </span>
+                  </button>
+
+                  <span className="product-status">
                     <span className={`pill ${app.status === 'active' ? 'ok' : 'off'}`}>
                       {app.status === 'active' ? 'Active' : 'Locked'}
                     </span>
-                  </td>
-                  <td>
+                  </span>
+
+                  <span className="product-size">
                     {app.exe_url && app.exe_missing ? (
-                      <>
-                        <span className="pill warn">file missing</span>
-                        <div className="mono">deleted outside the panel</div>
-                      </>
+                      <span className="pill warn">missing</span>
                     ) : app.exe_url ? (
-                      <>
-                        <strong>{size(app.exe_bytes)}</strong>
-                        <div className="mono">{app.exe_sha256 ? `${app.exe_sha256.slice(0, 16)}…` : 'no hash'}</div>
-                      </>
+                      size(app.exe_bytes)
                     ) : (
-                      <span className="mono">no file</span>
+                      <span className="quiet">no file</span>
                     )}
-                  </td>
-                  <td>
-                    <div className="row" style={{ justifyContent: 'flex-end' }}>
-                      {app.exe_missing ? (
-                        <button
-                          className="row-action"
-                          disabled={busy}
-                          title="The file is gone from the bucket. Forget it so the row stops claiming it."
-                          onClick={() => void removeFile(app, 'exe')}
-                        >
-                          Clear
-                        </button>
-                      ) : null}
+                  </span>
+
+                  <div className="product-actions">
+                    {app.exe_missing ? (
                       <button
                         className="row-action"
                         disabled={busy}
-                        onClick={() => void patch(app.id, { status: app.status === 'active' ? 'locked' : 'active' })}
+                        title="The file is gone from the bucket. Forget it so the row stops claiming it."
+                        onClick={() => void removeFile(app, 'exe')}
                       >
-                        {app.status === 'active' ? 'Lock' : 'Unlock'}
+                        Clear
                       </button>
-                      <button className="row-action" onClick={() => setSelected(app.id === selected ? null : app.id)}>
-                        {app.id === selected ? 'Close' : 'Edit'}
-                      </button>
-                      <button className="row-action danger" disabled={busy} onClick={() => void remove(app.id)}>
-                        Remove
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    ) : null}
+                    <button
+                      className="row-action"
+                      disabled={busy}
+                      onClick={() =>
+                        void patch(app.id, { status: app.status === 'active' ? 'locked' : 'active' })
+                      }
+                    >
+                      {app.status === 'active' ? 'Lock' : 'Unlock'}
+                    </button>
+                    <button
+                      className="row-action"
+                      onClick={() => setSelected(app.id === selected ? null : app.id)}
+                    >
+                      {app.id === selected ? 'Close' : 'Edit'}
+                    </button>
+                    <button className="row-action danger" disabled={busy} onClick={() => void remove(app.id)}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {current ? (
-        <div className="card">
-          <h2>{current.name}</h2>
-
-          <div className="field">
-            <label className="label" htmlFor={`name-${current.id}`}>
-              Name
-            </label>
-            <input
-              id={`name-${current.id}`}
-              type="text"
-              defaultValue={current.name}
-              onBlur={(event) => {
-                const value = event.target.value.trim()
-                if (value && value !== current.name) void patch(current.id, { name: value })
-              }}
-            />
-          </div>
-
-          <div className="field">
-            <label className="label" htmlFor={`desc-${current.id}`}>
-              Description
-            </label>
-            <DescriptionField
-              key={current.id}
-              app={current}
-              onSave={(description) => patch(current.id, { description })}
-            />
-          </div>
-
-          <div className="row" style={{ alignItems: 'flex-start' }}>
-            <div className="field" style={{ flex: 1, minWidth: 160 }}>
-              <label className="label" htmlFor={`version-${current.id}`}>
-                Version
-              </label>
-              <input
-                id={`version-${current.id}`}
-                type="text"
-                defaultValue={current.version}
-                onBlur={(event) => {
-                  const value = event.target.value.trim() || '1.0.0'
-                  if (value !== current.version) void patch(current.id, { version: value })
-                }}
-              />
             </div>
+          )}
+        </section>
 
-            <div className="field" style={{ flex: 2, minWidth: 200 }}>
-              <label className="label" htmlFor={`keyauth-${current.id}`}>
-                SNOW Auth app id
-              </label>
-              <input
-                id={`keyauth-${current.id}`}
-                type="text"
-                defaultValue={current.keyauth_app_id}
-                placeholder="empty means available to anyone signed in"
-                onBlur={(event) => {
-                  const value = event.target.value.trim()
-                  if (value !== current.keyauth_app_id) void patch(current.id, { keyauthAppId: value })
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="field">
-            <span className="label">Installer</span>
-            <div
-              className="dropzone"
-              data-active={progress?.id === current.id || undefined}
-              onClick={() => fileInput.current?.click()}
-            >
-              {current.exe_url && current.exe_missing ? (
-                <div>
-                  <span className="pill warn">file missing</span>
-                  <div className="hint" style={{ marginTop: 6 }}>
-                    This row still points at a file the bucket no longer has — usually because it was
-                    deleted in the Supabase console. Upload a new one, or clear the leftover below.
-                  </div>
+        <aside className={`editor-pane${current ? ' is-open' : ''}`} aria-hidden={!current}>
+          {current ? (
+            <>
+              <div className="editor-head">
+                <div style={{ minWidth: 0 }}>
+                  <p className="label" style={{ marginBottom: 5 }}>
+                    Editing
+                  </p>
+                  <h2>{current.name}</h2>
                 </div>
-              ) : current.exe_url ? (
-                <>
-                  <strong>{size(current.exe_bytes)}</strong>
-                  <div className="mono" style={{ marginTop: 4 }}>
-                    {current.exe_sha256 ? `sha256 ${current.exe_sha256.slice(0, 24)}…` : 'no hash published'}
-                  </div>
-                  <div className="hint" style={{ marginTop: 6 }}>
-                    Click to replace. The loader verifies these bytes before installing.
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <strong>Upload an .exe</strong>
-                  <div className="hint" style={{ marginTop: 6 }}>
-                    It goes straight to the bucket, then the server hashes it. No size limit here.
-                  </div>
-                </div>
-              )}
-
-              {progress && progress.id === current.id ? (
-                <div className="progress">
-                  <span style={{ width: `${progress.percent}%` }} />
-                </div>
-              ) : null}
-            </div>
-            <input
-              ref={fileInput}
-              type="file"
-              accept=".exe,application/octet-stream"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) void upload(current, file, 'exe')
-              }}
-            />
-            <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-              <span className="hint">
-                {current.exe_missing
-                  ? 'The bucket does not have this file.'
-                  : current.exe_url
-                    ? 'Delete it before uploading next month’s build, or upload over it.'
-                    : 'No installer yet.'}
-              </span>
-              {current.exe_url ? (
-                <button
-                  type="button"
-                  className="row-action danger"
-                  disabled={busy}
-                  onClick={() => void removeFile(current, 'exe')}
-                >
-                  {current.exe_missing ? 'Clear the leftover' : 'Delete installer'}
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="field">
-            <span className="label">Card image</span>
-            <div className="dropzone" onClick={() => imageInput.current?.click()}>
-              {current.image_url && current.image_missing
-                ? 'Image missing from the bucket — upload it again'
-                : current.image_url
-                  ? 'Replace image'
-                  : 'Upload artwork — PNG, JPG, GIF, WebP, or a short MP4/WebM'}
-            </div>
-            {/*
-             * Or a link.
-             *
-             * The preview clips are the largest thing a visitor's browser asks for after the
-             * film, and they do not have to come out of this bucket: a clip on a CDN, an
-             * image host, a folder of his own — anything with a public https address will
-             * play. Pasting one here points the card at it and stops the upload entirely.
-             */}
-            <div className="row" style={{ marginTop: 8, gap: 8, alignItems: 'center' }}>
-              <input
-                type="url"
-                value={artworkLink}
-                placeholder="…or paste a link to the clip or picture"
-                style={{ flex: 1, minWidth: 220 }}
-                onChange={(event) => setArtworkLink(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && artworkLink.trim()) {
-                    event.preventDefault()
-                    void patch(current.id, { image: artworkLink.trim() })
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="btn small"
-                disabled={busy || !artworkLink.trim()}
-                onClick={() => void patch(current.id, { image: artworkLink.trim() })}
-              >
-                Use link
-              </button>
-            </div>
-
-            {current.image_url ? (
-              /* The artwork itself, at card size, with the frame you are setting on it. */
-              <CardFrame
-                key={current.id}
-                image={current.image_url}
-                name={current.name}
-                blur={current.image_blur ?? 0}
-                dim={current.image_dim ?? 0}
-                onSave={(values) => void patch(current.id, values)}
-              />
-            ) : null}
-            <div className="hint" style={{ marginTop: 6 }}>
-              PNG, JPG, GIF, WebP — or a short MP4/WebM that loops like a GIF and weighs a
-              fraction of one. Up to 25 MB. A pasted link is served by whoever hosts it, so it
-              costs this bucket nothing.
-            </div>
-            {current.image_url ? (
-              <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
-                <button
-                  type="button"
-                  className="row-action danger"
-                  disabled={busy}
-                  onClick={() => void removeFile(current, 'image')}
-                >
-                  {current.image_missing ? 'Clear the leftover' : 'Delete image'}
+                <button type="button" className="editor-close" onClick={() => setSelected(null)}>
+                  Close
                 </button>
               </div>
-            ) : null}
-            <input
-              ref={imageInput}
-              type="file"
-              accept="image/*,.gif,.webp,video/mp4,video/webm,.mp4,.webm,.mov"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) void upload(current, file, 'image')
-              }}
-            />
+
+              <div className="field">
+                <label className="label" htmlFor={`name-${current.id}`}>
+                  Name
+                </label>
+                <input
+                  id={`name-${current.id}`}
+                  type="text"
+                  defaultValue={current.name}
+                  onBlur={(event) => {
+                    const value = event.target.value.trim()
+                    if (value && value !== current.name) void patch(current.id, { name: value })
+                  }}
+                />
+              </div>
+
+              <div className="field">
+                <label className="label" htmlFor={`desc-${current.id}`}>
+                  Description
+                </label>
+                <DescriptionField
+                  key={current.id}
+                  app={current}
+                  onSave={(description) => patch(current.id, { description })}
+                />
+              </div>
+
+              <div className="row" style={{ alignItems: 'flex-start' }}>
+                <div className="field" style={{ flex: 1, minWidth: 140 }}>
+                  <label className="label" htmlFor={`version-${current.id}`}>
+                    Version
+                  </label>
+                  <input
+                    id={`version-${current.id}`}
+                    type="text"
+                    defaultValue={current.version}
+                    onBlur={(event) => {
+                      const value = event.target.value.trim() || '1.0.0'
+                      if (value !== current.version) void patch(current.id, { version: value })
+                    }}
+                  />
+                </div>
+
+                <div className="field" style={{ flex: 2, minWidth: 180 }}>
+                  <label className="label" htmlFor={`keyauth-${current.id}`}>
+                    SNOW Auth app id
+                  </label>
+                  <input
+                    id={`keyauth-${current.id}`}
+                    type="text"
+                    defaultValue={current.keyauth_app_id}
+                    placeholder="empty means available to anyone signed in"
+                    onBlur={(event) => {
+                      const value = event.target.value.trim()
+                      if (value !== current.keyauth_app_id) void patch(current.id, { keyauthAppId: value })
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="field">
+                <span className="label">Installer</span>
+                <div
+                  className="dropzone"
+                  data-active={progress?.id === current.id || undefined}
+                  onClick={() => fileInput.current?.click()}
+                >
+                  {current.exe_url && current.exe_missing ? (
+                    <div>
+                      <span className="pill warn">file missing</span>
+                      <div className="hint" style={{ marginTop: 6 }}>
+                        This row still points at a file the bucket no longer has — usually because it was
+                        deleted in the Supabase console. Upload a new one, or clear the leftover below.
+                      </div>
+                    </div>
+                  ) : current.exe_url ? (
+                    <>
+                      <strong>{size(current.exe_bytes)}</strong>
+                      <div className="mono" style={{ marginTop: 4 }}>
+                        {current.exe_sha256 ? `sha256 ${current.exe_sha256.slice(0, 24)}…` : 'no hash published'}
+                      </div>
+                      <div className="hint" style={{ marginTop: 6 }}>
+                        Click to replace. The loader verifies these bytes before installing.
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <strong>Upload an .exe</strong>
+                      <div className="hint" style={{ marginTop: 6 }}>
+                        It goes straight to the bucket, then the server hashes it. No size limit here.
+                      </div>
+                    </div>
+                  )}
+
+                  {progress && progress.id === current.id ? (
+                    <div className="progress">
+                      <span style={{ width: `${progress.percent}%` }} />
+                    </div>
+                  ) : null}
+                </div>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept=".exe,application/octet-stream"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void upload(current, file, 'exe')
+                  }}
+                />
+                <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                  <span className="hint">
+                    {current.exe_missing
+                      ? 'The bucket does not have this file.'
+                      : current.exe_url
+                        ? 'Delete it before uploading next month’s build, or upload over it.'
+                        : 'No installer yet.'}
+                  </span>
+                  {current.exe_url ? (
+                    <button
+                      type="button"
+                      className="row-action danger"
+                      disabled={busy}
+                      onClick={() => void removeFile(current, 'exe')}
+                    >
+                      {current.exe_missing ? 'Clear the leftover' : 'Delete installer'}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="field">
+                <span className="label">Card image</span>
+                <div className="dropzone" onClick={() => imageInput.current?.click()}>
+                  {current.image_url && current.image_missing
+                    ? 'Image missing from the bucket — upload it again'
+                    : current.image_url
+                      ? 'Replace image'
+                      : 'Upload artwork — PNG, JPG, GIF, WebP, or a short MP4/WebM'}
+                </div>
+                {/* Or a link. A clip on a CDN costs this bucket nothing. */}
+                <div className="row" style={{ marginTop: 8, gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="url"
+                    value={artworkLink}
+                    placeholder="…or paste a link to the clip or picture"
+                    style={{ flex: 1, minWidth: 180 }}
+                    onChange={(event) => setArtworkLink(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && artworkLink.trim()) {
+                        event.preventDefault()
+                        void patch(current.id, { image: artworkLink.trim() })
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn small"
+                    disabled={busy || !artworkLink.trim()}
+                    onClick={() => void patch(current.id, { image: artworkLink.trim() })}
+                  >
+                    Use link
+                  </button>
+                </div>
+
+                {current.image_url ? (
+                  <CardFrame
+                    key={current.id}
+                    image={current.image_url}
+                    name={current.name}
+                    blur={current.image_blur ?? 0}
+                    dim={current.image_dim ?? 0}
+                    onSave={(values) => void patch(current.id, values)}
+                  />
+                ) : null}
+                <div className="hint" style={{ marginTop: 6 }}>
+                  PNG, JPG, GIF, WebP — or a short MP4/WebM that loops like a GIF and weighs a
+                  fraction of one. Up to 25 MB. A pasted link is served by whoever hosts it, so it
+                  costs this bucket nothing.
+                </div>
+                {current.image_url ? (
+                  <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className="row-action danger"
+                      disabled={busy}
+                      onClick={() => void removeFile(current, 'image')}
+                    >
+                      {current.image_missing ? 'Clear the leftover' : 'Delete image'}
+                    </button>
+                  </div>
+                ) : null}
+                <input
+                  ref={imageInput}
+                  type="file"
+                  accept="image/*,.gif,.webp,video/mp4,video/webm,.mp4,.webm,.mov"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void upload(current, file, 'image')
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="editor-empty">
+              <span className="brand-mark" aria-hidden="true" />
+              <h2>Nothing selected</h2>
+              <p className="hint">
+                Pick a product from the catalogue to edit its name, description, installer and
+                artwork.
+              </p>
+            </div>
+          )}
+        </aside>
+      </div>
+
+      <div
+        className="sheet-scrim"
+        data-open={current ? 'true' : 'false'}
+        aria-hidden="true"
+        onClick={() => setSelected(null)}
+      />
+
+      <section className="panel">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">New product</h2>
+            <p className="panel-sub">Name it, describe it, and it joins the catalogue.</p>
           </div>
         </div>
-      ) : null}
-
-      <div className="card">
-        <h2>New product</h2>
         <form onSubmit={create}>
           <div className="row" style={{ alignItems: 'flex-start' }}>
             <div className="field" style={{ flex: 1, minWidth: 180 }}>
@@ -819,7 +848,7 @@ export default function Products(): React.JSX.Element {
             Create
           </button>
         </form>
-      </div>
+      </section>
     </>
   )
 }

@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic'
 /*
  * The door.
  *
- * Two rooms. The left one is the house: navy, a rule inside a rule, the wordmark, and
- * one sentence about what this panel is. The right one is the desk: paper, a short
- * welcome, two fields, one button. Nothing moves, nothing glows, and there is no
- * marketing — you are here because you already know what this is.
+ * Two rooms. The left one is the house: black, a rule inside a rule, the wordmark, and one
+ * sentence about what this panel is. The right one is the desk: a box on grey, a short
+ * welcome, two fields, one button. Nothing moves, nothing glows, and there is no marketing
+ * — you are here because you already know what this is.
  */
 export default function LoginPage(): React.JSX.Element {
   return (
@@ -28,8 +28,8 @@ export default function LoginPage(): React.JSX.Element {
           <p className="login-kicker">Operator access</p>
           <p className="login-quote-title">Everything the loader serves, in one room.</p>
           <p>
-            Products, artwork, accounts and the sign-in service — published here, read by the
-            app on its next launch.
+            Products, artwork, accounts and the sign-in service — published here, read by the app
+            on its next launch.
           </p>
         </div>
 
@@ -43,6 +43,7 @@ export default function LoginPage(): React.JSX.Element {
         <div className="login-tools">
           <ThemeToggle />
         </div>
+
         <div className="login">
           <p className="login-kicker">Sign in</p>
           <h1 className="login-title">Welcome back</h1>
@@ -50,15 +51,17 @@ export default function LoginPage(): React.JSX.Element {
             Use the operator account for this deployment. Access is logged and rate-limited.
           </p>
 
-          {adminReady() ? (
-            <LoginForm />
-          ) : (
-            <div className="notice error">
-              The panel is not configured. Set <code>ADMIN_USERNAME</code>,{' '}
-              <code>ADMIN_PASSWORD</code> and <code>ADMIN_SESSION_SECRET</code> (32+
-              characters) in the environment, then reload this page.
-            </div>
-          )}
+          <div className="login-card">
+            {adminReady() ? (
+              <LoginForm />
+            ) : (
+              <div className="notice error">
+                The panel is not configured. Set <code>ADMIN_USERNAME</code>,{' '}
+                <code>ADMIN_PASSWORD</code> and <code>ADMIN_SESSION_SECRET</code> (32+ characters)
+                in the environment, then reload this page.
+              </div>
+            )}
+          </div>
 
           <p className="login-foot">Authorised operators only. Sessions last seven days.</p>
         </div>

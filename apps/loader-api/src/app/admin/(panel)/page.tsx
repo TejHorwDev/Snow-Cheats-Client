@@ -9,20 +9,15 @@ export const dynamic = 'force-dynamic'
 /*
  * The control room.
  *
- * It used to be four cards, a moving tape of repeated facts, a "jump to" card that linked
- * to the four links already in the header, a "shortcuts" card listing three endpoints
- * nobody types, and a table of the catalogue that repeated the next page. Every one of
- * those was true, and none of them was worth the space it took.
- *
- * What is left is what gets looked at:
+ * What is here is what gets looked at:
  *
  *   1. Three numbers and a weight, at the size numbers deserve.
- *   2. What the app is being told, in one list of six lines.
+ *   2. What the app is being told, in one list of five lines.
  *   3. The catalogue, one row each, big enough to read across the room.
  *
- * Everything here is read from the tables the loader reads. Nothing is cached and nothing
- * is estimated — a dashboard that can be stale is a dashboard that lies during exactly
- * the incident it exists for.
+ * Everything is read from the tables the loader reads. Nothing is cached and nothing is
+ * estimated — a dashboard that can be stale is a dashboard that lies during exactly the
+ * incident it exists for.
  */
 
 function size(bytes: number): string {
@@ -35,11 +30,19 @@ export default async function OverviewPage(): Promise<React.JSX.Element> {
   if (!databaseReady()) {
     return (
       <div className="page">
-        <h1>Overview</h1>
-        <p className="lede">
-          Set <span className="mono">SUPABASE_URL</span> and{' '}
-          <span className="mono">SUPABASE_SERVICE_ROLE_KEY</span> on this deployment.
-        </p>
+        <section className="hero">
+          <div className="hero-copy">
+            <p className="eyebrow">
+              <span className="dot" data-tone="warn" />
+              Not configured
+            </p>
+            <h1>Overview</h1>
+            <p className="lede">
+              Set <span className="mono">SUPABASE_URL</span> and{' '}
+              <span className="mono">SUPABASE_SERVICE_ROLE_KEY</span> on this deployment.
+            </p>
+          </div>
+        </section>
       </div>
     )
   }
@@ -80,16 +83,16 @@ export default async function OverviewPage(): Promise<React.JSX.Element> {
   return (
     <div className="page">
       <section className="hero">
-        <div>
+        <div className="hero-copy">
           <p className="eyebrow">
-            <span className="dot" data-tone={failure || maintenance ? 'warn' : undefined} />
+            <span className="dot" data-tone={failure || maintenance ? 'warn' : 'on'} />
             {state}
           </p>
           <h1>Overview</h1>
           <p className="lede">
             {failure
               ? 'The database did not answer.'
-              : `Everything the loader is serving, and everything it is being told, on one page.`}
+              : 'Everything the loader is serving, and everything it is being told, on one page.'}
           </p>
         </div>
 
@@ -125,9 +128,18 @@ export default async function OverviewPage(): Promise<React.JSX.Element> {
         <Stat value={size(bytes)} label="Installers" index={3} />
       </div>
 
-      <section className="split">
-        <h2 className="split-label">What the app is told</h2>
-        <div className="split-body">
+      <div className="grid">
+        <section className="panel span-7">
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title">What the app is told</h2>
+              <p className="panel-sub">Read from the config table on every launch.</p>
+            </div>
+            <Link href="/admin/settings" className="panel-action">
+              Change these
+            </Link>
+          </div>
+
           <dl className="kv">
             <dt>Film</dt>
             <dd>
@@ -168,17 +180,19 @@ export default async function OverviewPage(): Promise<React.JSX.Element> {
               )}
             </dd>
           </dl>
-          <Link href="/admin/settings" className="block-action">
-            Change these
-          </Link>
-        </div>
-      </section>
+        </section>
 
-      <section className="split">
-        <h2 className="split-label">
-          Catalogue <span className="count">{String(apps.length).padStart(2, '0')}</span>
-        </h2>
-        <div className="split-body">
+        <section className="panel span-5">
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title">Catalogue</h2>
+              <p className="panel-sub">What the loader can show right now.</p>
+            </div>
+            <Link href="/admin/apps" className="panel-action">
+              Open
+            </Link>
+          </div>
+
           {apps.length === 0 ? (
             <p className="quiet">
               Nothing published yet. <Link href="/admin/apps">Add the first product.</Link>
@@ -195,6 +209,35 @@ export default async function OverviewPage(): Promise<React.JSX.Element> {
               ))}
             </div>
           )}
+        </section>
+      </div>
+
+      <section className="panel">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Go straight there</h2>
+            <p className="panel-sub">The four rooms of the panel, and the two the menu keeps out of sight.</p>
+          </div>
+          <span className="panel-action">⌘K anywhere</span>
+        </div>
+
+        <div className="quick-actions">
+          <Link href="/admin/apps" className="quick-action">
+            Products
+            <small>Installers, artwork, descriptions</small>
+          </Link>
+          <Link href="/admin/storage" className="quick-action">
+            Storage
+            <small>The bucket, the ceiling, the usage</small>
+          </Link>
+          <Link href="/admin/settings" className="quick-action">
+            Settings
+            <small>Film, announcement, links</small>
+          </Link>
+          <Link href="/admin/accounts" className="quick-action">
+            Accounts
+            <small>Who can sign in, and to what</small>
+          </Link>
         </div>
       </section>
     </div>

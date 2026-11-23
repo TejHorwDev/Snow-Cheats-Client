@@ -115,8 +115,7 @@ export default function StorageSettings(): React.JSX.Element {
   const usage = status?.usage && !('error' in status.usage) ? status.usage : null
 
   return (
-    <div className="card">
-      <h2>Where files go</h2>
+    <div className="storage-body">
       {status ? (
         <p className="hint">
           Live driver: <span className="mono">{status.driver}</span> — {status.reason}. Bucket{' '}
